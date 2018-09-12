@@ -6,16 +6,9 @@ namespace CMPUCCompiler
     {
         public static void Main(string[] args)
         {
-            Scanner scanner = new Scanner();
-            scanner.Entrada = Console.ReadLine();
 
-            Token token = scanner.ProximoToken();
+            Parser parser = new Parser(Console.ReadLine());
 
-            while (token.Tipo != TipoToken.EOF)
-            {
-                Console.WriteLine(token.ToString());
-                token = scanner.ProximoToken();
-            }
         }
     }
 }

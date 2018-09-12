@@ -62,6 +62,7 @@ namespace CMPUCCompiler
                 }
                 catch (Exception e)
                 {
+                    //TODO Considerar IvalidParseException
                     Console.WriteLine("Número Inválido");
                     NovoToken = new Token(TipoToken.ERRO);
                 }
