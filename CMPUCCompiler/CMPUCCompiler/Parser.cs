@@ -1,9 +1,5 @@
-﻿using CMPUCCompiler.Exceptions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
+using System.IO;
 
 namespace CMPUCCompiler
 {
@@ -11,88 +7,115 @@ namespace CMPUCCompiler
     {
         Scanner scanner;
         Token tokenAtual;
+        public bool Status { get; set; }
 
-        public Parser(string entrada)
+        public Parser(string nomeArquivo)
         {
             scanner = new Scanner();
-            scanner.Entrada = entrada;
-            ListaInstrucoes();
+            scanner.Entrada = LerArquivo(nomeArquivo);
         }
 
-        public void ListaInstrucoes()
+        private string LerArquivo(string nomeArquivo)
+        {
+            string entrada = "";
+
+            try
+            {
+                using (StreamReader sr = new StreamReader(nomeArquivo))
+                {
+                    entrada = sr.ReadToEnd();
+                    Console.WriteLine(entrada + "\n");
+                    Console.WriteLine(" -------- Resultado -------- \n");
+                }
+            }
+            catch (Exception e)
+            {
+
+                Console.WriteLine("Não foi possível ler o arquivo.");
+                Console.WriteLine(e.Message);
+            }
+
+            return entrada;
+
+        }
+
+        public void Analisar()
         {
             tokenAtual = scanner.ProximoToken();
 
-            if (tokenAtual.Tipo != TipoToken.FIM)
+            ListaInstrucoes();
+        }
+
+        private void ListaInstrucoes()
+        {
+            if (tokenAtual.Tipo == TipoToken.VARIAVEL
+                || tokenAtual.Tipo == TipoToken.ESCREVA)
             {
-                Instrucao(tokenAtual.Tipo);
-                VerificarTokenAtual(TipoToken.PV);
+                Instrucao();
+                VerificarToken(TipoToken.PV);
                 ListaInstrucoes();
             }
+            else if (tokenAtual.Tipo == TipoToken.ERRO)
+            {
+                return;
+            }
             else
             {
-                Console.WriteLine("Programa executado com sucesso!");
-
+                VerificarToken(TipoToken.FIM);
             }
-
         }
 
-        public void Instrucao(TipoToken tipo)
+        private void Instrucao()
         {
-            if (tipo == TipoToken.VARIAVEL)
+            if (tokenAtual.Tipo == TipoToken.VARIAVEL)
             {
-                VerificarProximoToken(TipoToken.ATRIBUICAO);
+                VerificarToken(TipoToken.VARIAVEL);
+                VerificarToken(TipoToken.ATRIBUICAO);
                 Expressao();
             }
-            else if (tipo == TipoToken.ESCREVA)
+            else if (tokenAtual.Tipo == TipoToken.ESCREVA)
             {
-                VerificarProximoToken(TipoToken.VARIAVEL);
+                VerificarToken(TipoToken.ESCREVA);
+                VerificarToken(TipoToken.ABRE_PAREN);
+                VerificarToken(TipoToken.VARIAVEL);
+                VerificarToken(TipoToken.FECHA_PAREN);
             }
-            else if (tipo == TipoToken.EOF)
-            {
-                throw new ProgramNotFinishedExcepetion("A cláusula 'fim' não foi encontrada");
-            }
-            else
-            {
-                throw new InstructionBeginningException("Início de instrução inválido.");
-            }
-
         }
 
-        public void Expressao()
+        private void Expressao()
         {
             Termo();
             RestanteExpressao();
         }
-        public void Termo()
+        private void Termo()
         {
-            tokenAtual = scanner.ProximoToken();
-
-            if (tokenAtual.Tipo == TipoToken.ABRE_PAREN)
+            if (tokenAtual.Tipo == TipoToken.VARIAVEL)
             {
-                Termo();
-                RestanteExpressao();
-                VerificarTokenAtual(TipoToken.FECHA_PAREN);
+                VerificarToken(TipoToken.VARIAVEL);
             }
-
-            else if (tokenAtual.Tipo != TipoToken.VARIAVEL && tokenAtual.Tipo != TipoToken.NUMERO)
+            else if (tokenAtual.Tipo == TipoToken.NUMERO)
             {
-                throw new TokenException("Somente variváveis e números são válidos");
+                VerificarToken(TipoToken.NUMERO);
             }
-
+            else
+            {
+                VerificarToken(TipoToken.ABRE_PAREN);
+                Expressao();
+                VerificarToken(TipoToken.FECHA_PAREN);
+            }
         }
 
-        public void RestanteExpressao()
+        private void RestanteExpressao()
         {
-            tokenAtual = scanner.ProximoToken();
-
             if (tokenAtual.Tipo == TipoToken.SOMA)
             {
+                VerificarToken(TipoToken.SOMA);
                 Termo();
                 RestanteExpressao();
             }
             else if (tokenAtual.Tipo == TipoToken.SUB)
             {
+                VerificarToken(TipoToken.SUB);
                 Termo();
                 RestanteExpressao();
             }
@@ -100,19 +123,21 @@ namespace CMPUCCompiler
 
         }
 
-        public void VerificarProximoToken(TipoToken tipo)
+        private void VerificarToken(TipoToken tipo)
         {
-            Token tk = scanner.ProximoToken();
+            if (tokenAtual.Tipo == tipo)
+            {
+                Status = true;
+            }
+            else
+            {
+                Status = false;
+                Console.WriteLine($"Token {tipo} esperado. Erro na posição {scanner.Posicao}");
+                tokenAtual = new Token(TipoToken.ERRO);
+                return;
+            }
 
-            if (tk.Tipo != tipo)
-                throw new TokenException($"Token {tipo} esperado.");
-
-        }
-
-        public void VerificarTokenAtual(TipoToken tipo)
-        {
-            if (tokenAtual.Tipo != tipo)
-                throw new TokenException();
+            tokenAtual = scanner.ProximoToken();
         }
 
     }

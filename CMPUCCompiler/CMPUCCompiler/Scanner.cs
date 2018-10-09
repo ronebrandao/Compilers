@@ -6,95 +6,97 @@ namespace CMPUCCompiler
     public class Scanner
     {
         public string Entrada { get; set; }
-        private int posicao;
+        public int Posicao { get; set; }
 
 
         public Token ProximoToken()
         {
             Token NovoToken = null;
 
-            if (posicao == Entrada.Length)
+            if (Posicao == Entrada.Length)
             {
                 NovoToken = new Token(TipoToken.EOF);
                 return NovoToken;
             }
 
-            while (Entrada[posicao] == ' ' ||
-                   Entrada[posicao] == '\t' ||
-                   Entrada[posicao] == '\n')
-                posicao++;
-
-
-            if (IsLetter(Entrada[posicao]))
+            while (Entrada[Posicao] == ' '
+                   || Entrada[Posicao] == '\r'
+                   || Entrada[Posicao] == '\t'
+                   || Entrada[Posicao] == '\n')
             {
-                string lexema = Entrada[posicao].ToString();
-                posicao++;
+                Posicao++;
+            }
 
-                while (posicao < Entrada.Length && (IsLetter(Entrada[posicao]) || IsNumber(Entrada[posicao])))
+            if (IsLetter(Entrada[Posicao]))
+            {
+                string lexema = Entrada[Posicao].ToString();
+                Posicao++;
+
+                while (Posicao < Entrada.Length && (IsLetter(Entrada[Posicao]) || IsNumber(Entrada[Posicao])))
                 {
-                    lexema += Entrada[posicao];
-                    posicao++;
+                    lexema += Entrada[Posicao];
+                    Posicao++;
                 }
 
                 if (!IsPalavraReservada(lexema))
                 {
-                    NovoToken = new Token(TipoToken.VARIAVEL, lexema);
+                    NovoToken = new Token(TipoToken.VARIAVEL, lexema, null);
                 }
                 else
                 {
                     NovoToken = ObterTokenPalavraReservada(lexema);
                 }
             }
-            else if (IsDigit(Entrada[posicao]))
+            else if (IsDigit(Entrada[Posicao]))
             {
-                string lexema = Entrada[posicao].ToString();
-                posicao++;
+                string lexema = Entrada[Posicao].ToString();
+                Posicao++;
 
-                while (posicao < Entrada.Length && IsDigit(Entrada[posicao]))
+                while (Posicao < Entrada.Length && IsDigit(Entrada[Posicao]))
                 {
-                    lexema += Entrada[posicao];
-                    posicao++;
+                    lexema += Entrada[Posicao];
+                    Posicao++;
                 }
 
                 try
                 {
-                    NovoToken = new Token(TipoToken.NUMERO, Double.Parse(lexema));
+                    NovoToken = new Token(TipoToken.NUMERO, null, Double.Parse(lexema));
                 }
                 catch (Exception e)
                 {
-                    //TODO Considerar IvalidParseException
+                    //TODO Considerar FormatException
                     Console.WriteLine("Número Inválido");
                     NovoToken = new Token(TipoToken.ERRO);
                 }
             }
-            else if (Entrada[posicao] == '=')
+            else if (Entrada[Posicao] == '=')
             {
-                posicao++;
+                Posicao++;
                 NovoToken = new Token(TipoToken.ATRIBUICAO);
             }
-            else if (Entrada[posicao] == '+')
+            else if (Entrada[Posicao] == '+')
             {
-                posicao++;
+                Posicao++;
                 NovoToken = new Token(TipoToken.SOMA);
             }
-            else if (Entrada[posicao] == '-')
+            else if (Entrada[Posicao] == '-')
             {
-                posicao++;
+                Posicao++;
                 NovoToken = new Token(TipoToken.SUB);
             }
-            else if (Entrada[posicao] == '(')
+            else if (Entrada[Posicao] == '(')
             {
-                posicao++;
+                Posicao++;
                 NovoToken = new Token(TipoToken.ABRE_PAREN);
             }
-            else if (Entrada[posicao] == ')')
+            else if (Entrada[Posicao] == ')')
             {
-                posicao++;
+                Posicao++;
                 NovoToken = new Token(TipoToken.FECHA_PAREN);
             }
-            else if (Entrada[posicao] == ';')
+            else if (Entrada[Posicao] == ';')
             {
-                posicao++;
+                Posicao++;
                 NovoToken = new Token(TipoToken.PV);
             }
             else

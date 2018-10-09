@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace CMPUCCompiler
 {
@@ -6,8 +7,17 @@ namespace CMPUCCompiler
     {
         public static void Main(string[] args)
         {
+            Parser parser = new Parser("main.txt");
+            parser.Analisar();
 
-            Parser parser = new Parser(Console.ReadLine());
+            if (parser.Status)
+            {
+                Console.WriteLine("Programa compilado com sucesso.\n");
+            }
+            else
+            {
+                Console.WriteLine("Erro sintático.\n");
+            }
 
         }
     }

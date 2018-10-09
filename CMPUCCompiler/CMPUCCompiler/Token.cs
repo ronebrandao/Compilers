@@ -19,29 +19,21 @@ namespace CMPUCCompiler
     public class Token
     {
         public TipoToken Tipo { get; }
-        public dynamic Valor { get; }
+        public double? Valor { get; }
+        public string Nome { get; }
 
         public Token(TipoToken tipo)
         {
             Tipo = tipo;
         }
         
-        public Token(TipoToken tipo, string valor)
+        public Token(TipoToken tipo, string nome, double? valor)
         {
             Tipo = tipo;
+            Nome = nome;
             Valor = valor;
         }
         
-        
-        public Token(TipoToken tipo, double valor)
-        {
-            Tipo = tipo;
-            Valor = valor;
-        }
-
-        public override string ToString()
-        {
-            return Valor != null ? $"Tipo: {Tipo.ToString()} e Valor: {Valor.ToString()}" : $"Tipo: {Tipo.ToString()}";
-        }
+        public override string ToString() => $"Tipo: {Tipo.ToString()} | Nome: {Nome ?? "null"} | Valor: {(Valor.ToString()?.Length == 0 ? "null" : Valor.ToString())}";
     }
 }
