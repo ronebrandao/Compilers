@@ -7,7 +7,7 @@ namespace CMPUCCompiler
     {
         public static void Main(string[] args)
         {
-            Parser parser = new Parser("main.txt");
+            Interpreter parser = new Interpreter("main.txt");
             parser.Analisar();
 
             if (parser.Status)

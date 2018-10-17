@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using static System.Char;
 
 namespace CMPUCCompiler
@@ -8,6 +9,17 @@ namespace CMPUCCompiler
         public string Entrada { get; set; }
         public int Posicao { get; set; }
 
+        Dictionary<string, int> tabelaVariaveis;
+
+        public Scanner()
+        {
+
+        }
+
+        public Scanner(Dictionary<string, int> tab)
+        {
+            tabelaVariaveis = tab;
+        }
 
         public Token ProximoToken()
         {
@@ -40,7 +52,8 @@ namespace CMPUCCompiler
 
                 if (!IsPalavraReservada(lexema))
                 {
-                    NovoToken = new Token(TipoToken.VARIAVEL, lexema, null);
+                    NovoToken = new Token(TipoToken.VARIAVEL, lexema);
+                    //tabelaVariaveis.Add(lexema, 0);
                 }
                 else
                 {
@@ -60,7 +73,7 @@ namespace CMPUCCompiler
 
                 try
                 {
-                    NovoToken = new Token(TipoToken.NUMERO, null, Double.Parse(lexema));
+                    NovoToken = new Token(TipoToken.NUMERO, null, Int32.Parse(lexema));
                 }
                 catch (Exception e)
                 {
