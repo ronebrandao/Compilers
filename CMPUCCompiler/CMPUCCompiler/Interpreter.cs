@@ -12,16 +12,16 @@ namespace CMPUCCompiler
     {
         Scanner scanner;
         Token tokenAtual;
-        Dictionary<string, int> tabelaVariaveis;
+        Dictionary<string, double> tabelaVariaveis;
         Stack pilhaExpressoes;
-        int operando1, operando2, resultado;
+        double operando1, operando2, resultado;
         string nomeVariavel;
 
         public bool Status { get; set; }
 
         public Interpreter(string nomeArquivo)
         {
-            tabelaVariaveis = new Dictionary<string, int>();
+            tabelaVariaveis = new Dictionary<string, double>();
             pilhaExpressoes = new Stack();
 
             scanner = new Scanner(tabelaVariaveis);
@@ -38,7 +38,8 @@ namespace CMPUCCompiler
         private void ListaInstrucoes()
         {
             if (tokenAtual.Tipo == TipoToken.VARIAVEL
-                || tokenAtual.Tipo == TipoToken.ESCREVA)
+                || tokenAtual.Tipo == TipoToken.ESCREVA
+                || tokenAtual.Tipo == TipoToken.LEIA)
             {
                 Instrucao();
                 VerificarToken(TipoToken.PV);
@@ -68,16 +69,9 @@ namespace CMPUCCompiler
                 tokenAtual = scanner.ProximoToken();
                 Expressao();
 
-                int valorExpr = pilhaExpressoes.Pop().ToInt();
+                double valorExpr = Convert.ToDouble(pilhaExpressoes.Pop());
 
-                if (tabelaVariaveis.ContainsKey(nomeVariavel))
-                {
-                    tabelaVariaveis[nomeVariavel] = valorExpr;
-                }
-                else
-                {
-                    tabelaVariaveis.Add(nomeVariavel, valorExpr);
-                }
+                AdicionarValorTabela(nomeVariavel, valorExpr);
 
             }
             else if (tokenAtual.Tipo == TipoToken.ESCREVA)
@@ -88,14 +82,82 @@ namespace CMPUCCompiler
                 VerificarToken(TipoToken.ABRE_PAREN);
                 tokenAtual = scanner.ProximoToken();
 
-                VerificarToken(TipoToken.VARIAVEL);
-                nomeVariavel = tokenAtual.Nome;
-                tokenAtual = scanner.ProximoToken();
+                string saida = "";
+                ListaArgs();
 
                 VerificarToken(TipoToken.FECHA_PAREN);
                 tokenAtual = scanner.ProximoToken();
 
-                Console.WriteLine(tabelaVariaveis.FirstOrDefault(variavel => variavel.Key == nomeVariavel).Value);
+
+                void ListaArgs()
+                {
+                    Argumento();
+                    RestoArgs();
+
+                    Console.WriteLine(saida);
+                }
+
+                void RestoArgs()
+                {
+                    if (tokenAtual.Tipo == TipoToken.VIRGULA)
+                    {
+                        VerificarToken(TipoToken.VIRGULA);
+                        tokenAtual = scanner.ProximoToken();
+
+                        Argumento();
+                        RestoArgs();
+                    }
+                    else;
+                }
+
+                void Argumento()
+                {
+                    if (tokenAtual.Tipo == TipoToken.VARIAVEL)
+                    {
+                        VerificarToken(TipoToken.VARIAVEL);
+                        nomeVariavel = tokenAtual.Nome;
+                        tokenAtual = scanner.ProximoToken();
+
+                        saida += tabelaVariaveis.FirstOrDefault(variavel => variavel.Key == nomeVariavel).Value + " ";
+                    }
+                    else if (tokenAtual.Tipo == TipoToken.NUMERO)
+                    {
+                        VerificarToken(TipoToken.NUMERO);
+
+                        saida += tokenAtual.Valor + " ";
+
+                        tokenAtual = scanner.ProximoToken();
+
+                    }
+                    else if (tokenAtual.Tipo == TipoToken.STRING)
+                    {
+                        VerificarToken(TipoToken.STRING);
+
+                        saida += tokenAtual.Nome + " ";
+
+                        tokenAtual = scanner.ProximoToken();
+                    }
+                }
+
+            }
+            else if (tokenAtual.Tipo == TipoToken.LEIA)
+            {
+                VerificarToken(TipoToken.LEIA);
+                tokenAtual = scanner.ProximoToken();
+
+                VerificarToken(TipoToken.ABRE_PAREN);
+                tokenAtual = scanner.ProximoToken();
+
+                VerificarToken(TipoToken.VARIAVEL);
+                nomeVariavel = tokenAtual.Nome;
+                tokenAtual.Valor = Convert.ToDouble(Console.ReadLine());
+
+                AdicionarValorTabela(nomeVariavel, tokenAtual.Valor);
+
+                tokenAtual = scanner.ProximoToken();
+
+                VerificarToken(TipoToken.FECHA_PAREN);
+                tokenAtual = scanner.ProximoToken();
 
             }
         }
@@ -104,33 +166,6 @@ namespace CMPUCCompiler
         {
             Termo();
             RestanteExpressao();
-        }
-        private void Termo()
-        {
-            if (tokenAtual.Tipo == TipoToken.VARIAVEL)
-            {
-                VerificarToken(TipoToken.VARIAVEL);
-                pilhaExpressoes.Push(tabelaVariaveis.FirstOrDefault(variavel => variavel.Key == tokenAtual.Nome).Value);
-
-                tokenAtual = scanner.ProximoToken();
-            }
-            else if (tokenAtual.Tipo == TipoToken.NUMERO)
-            {
-                VerificarToken(TipoToken.NUMERO);
-                pilhaExpressoes.Push(tokenAtual.Valor);
-
-                tokenAtual = scanner.ProximoToken();
-            }
-            else
-            {
-                VerificarToken(TipoToken.ABRE_PAREN);
-                tokenAtual = scanner.ProximoToken();
-
-                Expressao();
-
-                VerificarToken(TipoToken.FECHA_PAREN);
-                tokenAtual = scanner.ProximoToken();
-            }
         }
 
         private void RestanteExpressao()
@@ -142,8 +177,8 @@ namespace CMPUCCompiler
                 Termo();
 
                 //Cálculo   
-                operando2 = pilhaExpressoes.Pop().ToInt();
-                operando1 = pilhaExpressoes.Pop().ToInt();
+                operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
+                operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
                 resultado = operando1 + operando2;
 
                 pilhaExpressoes.Push(resultado);
@@ -157,8 +192,8 @@ namespace CMPUCCompiler
                 Termo();
 
                 //Cálculo
-                operando2 = pilhaExpressoes.Pop().ToInt();
-                operando1 = pilhaExpressoes.Pop().ToInt();
+                operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
+                operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
                 resultado = operando1 - operando2;
 
                 pilhaExpressoes.Push(resultado);
@@ -168,6 +203,127 @@ namespace CMPUCCompiler
             else;
 
         }
+        private void Termo()
+        {
+            Fator();
+            RestoTermo();
+        }
+
+        private void Fator()
+        {
+            if (tokenAtual.Tipo == TipoToken.VARIAVEL)
+            {
+                VerificarToken(TipoToken.VARIAVEL);
+                pilhaExpressoes.Push(tabelaVariaveis.FirstOrDefault(variavel => variavel.Key == tokenAtual.Nome).Value);
+
+                tokenAtual = scanner.ProximoToken();
+
+                Potencia();
+            }
+            else if (tokenAtual.Tipo == TipoToken.NUMERO)
+            {
+                VerificarToken(TipoToken.NUMERO);
+                pilhaExpressoes.Push(tokenAtual.Valor);
+
+                tokenAtual = scanner.ProximoToken();
+
+                Potencia();
+            }
+            else
+            {
+                VerificarToken(TipoToken.ABRE_PAREN);
+                tokenAtual = scanner.ProximoToken();
+
+                Expressao();
+
+                VerificarToken(TipoToken.FECHA_PAREN);
+                tokenAtual = scanner.ProximoToken();
+
+                Potencia();
+            }
+        }
+
+        private void RestoTermo()
+        {
+            if (tokenAtual.Tipo == TipoToken.MULT)
+            {
+                VerificarToken(TipoToken.MULT);
+                tokenAtual = scanner.ProximoToken();
+                Fator();
+
+                operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
+                operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
+                resultado = operando1 * operando2;
+
+                pilhaExpressoes.Push(resultado);
+
+                RestoTermo();
+            }
+            else if (tokenAtual.Tipo == TipoToken.DIV)
+            {
+                VerificarToken(TipoToken.DIV);
+                tokenAtual = scanner.ProximoToken();
+                Fator();
+
+                operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
+
+                if (operando2 == 0)
+                {
+                    Console.WriteLine("Divisão por 0 inválida.");
+                    tokenAtual = new Token(TipoToken.ERRO);
+                    ListaInstrucoes();
+                }
+
+                operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
+                resultado = operando1 / operando2;
+
+                pilhaExpressoes.Push(resultado);
+
+                RestoTermo();
+            }
+            else if (tokenAtual.Tipo == TipoToken.RESTO)
+            {
+                VerificarToken(TipoToken.RESTO);
+                tokenAtual = scanner.ProximoToken();
+                Fator();
+
+                operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
+
+                if (operando2 == 0)
+                {
+                    Console.WriteLine("Divisão por 0 inválida.");
+                    tokenAtual = new Token(TipoToken.ERRO);
+                    ListaInstrucoes();
+                }
+
+                operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
+                resultado = operando1 % operando2;
+
+                pilhaExpressoes.Push(resultado);
+
+                RestoTermo();
+            }
+            else;
+        }
+
+        private void Potencia()
+        {
+            if (tokenAtual.Tipo == TipoToken.EXP)
+            {
+                VerificarToken(TipoToken.EXP);
+                tokenAtual = scanner.ProximoToken();
+
+                Expressao();
+
+                operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
+                operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
+                resultado = Math.Pow(operando1, operando2);
+
+                pilhaExpressoes.Push(resultado);
+            }
+            
+        }
+
 
         private void VerificarToken(TipoToken tipo)
         {
@@ -180,9 +336,20 @@ namespace CMPUCCompiler
                 Status = false;
                 Console.WriteLine($"Token {tipo} esperado. Erro na posição {scanner.Posicao}");
                 tokenAtual = new Token(TipoToken.ERRO);
-                return;
             }
 
+        }
+
+        private void AdicionarValorTabela(string nomeVariavel, double valor)
+        {
+            if (tabelaVariaveis.ContainsKey(nomeVariavel))
+            {
+                tabelaVariaveis[nomeVariavel] = valor;
+            }
+            else
+            {
+                tabelaVariaveis.Add(nomeVariavel, valor);
+            }
         }
     }
 }

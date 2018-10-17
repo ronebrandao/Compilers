@@ -12,11 +12,15 @@ namespace CMPUCCompiler
 
             if (parser.Status)
             {
-                Console.WriteLine("Programa compilado com sucesso.\n");
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("\nPrograma compilado com sucesso.\n");
+                Console.ForegroundColor = ConsoleColor.White;
             }
             else
             {
-                Console.WriteLine("Erro sintático.\n");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("\nErro sintático.\n");
+                Console.ForegroundColor = ConsoleColor.White;
             }
 
         }

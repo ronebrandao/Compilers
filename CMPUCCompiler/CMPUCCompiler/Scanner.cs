@@ -9,14 +9,14 @@ namespace CMPUCCompiler
         public string Entrada { get; set; }
         public int Posicao { get; set; }
 
-        Dictionary<string, int> tabelaVariaveis;
+        Dictionary<string, double> tabelaVariaveis;
 
         public Scanner()
         {
 
         }
 
-        public Scanner(Dictionary<string, int> tab)
+        public Scanner(Dictionary<string, double> tab)
         {
             tabelaVariaveis = tab;
         }
@@ -53,7 +53,6 @@ namespace CMPUCCompiler
                 if (!IsPalavraReservada(lexema))
                 {
                     NovoToken = new Token(TipoToken.VARIAVEL, lexema);
-                    //tabelaVariaveis.Add(lexema, 0);
                 }
                 else
                 {
@@ -65,22 +64,52 @@ namespace CMPUCCompiler
                 string lexema = Entrada[Posicao].ToString();
                 Posicao++;
 
-                while (Posicao < Entrada.Length && IsDigit(Entrada[Posicao]))
+                bool isDecimal = false;
+
+                while (Posicao < Entrada.Length && (IsDigit(Entrada[Posicao]) || (Entrada[Posicao] == '.' && !isDecimal)))
                 {
+                    if (Entrada[Posicao] == '.')
+                        isDecimal = true;
+
                     lexema += Entrada[Posicao];
                     Posicao++;
                 }
 
                 try
                 {
-                    NovoToken = new Token(TipoToken.NUMERO, null, Int32.Parse(lexema));
+                    NovoToken = new Token(TipoToken.NUMERO, null, lexema.ToDouble());
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
                     //TODO Considerar FormatException
                     Console.WriteLine("Número Inválido");
                     NovoToken = new Token(TipoToken.ERRO);
                 }
+            }
+            else if (Entrada[Posicao] == '"')
+            {
+                string lexema = Entrada[Posicao].ToString();
+                Posicao++;
+
+                while (Posicao < Entrada.Length && (IsDigit(Entrada[Posicao]) || Entrada[Posicao] != '"'))
+                {
+                    lexema += Entrada[Posicao];
+                    Posicao++;
+                }
+
+                if (Entrada[Posicao] == '"')
+                {
+                    lexema += Entrada[Posicao];
+                    Posicao++;
+                }
+
+                NovoToken = new Token(TipoToken.STRING, lexema);
+
+            }
+            else if (Entrada[Posicao] == ',')
+            {
+                Posicao++;
+                NovoToken = new Token(TipoToken.VIRGULA);
             }
             else if (Entrada[Posicao] == '=')
             {
@@ -91,6 +120,26 @@ namespace CMPUCCompiler
             {
                 Posicao++;
                 NovoToken = new Token(TipoToken.SOMA);
+            }
+            else if (Entrada[Posicao] == '*')
+            {
+                Posicao++;
+                NovoToken = new Token(TipoToken.MULT);
+            }
+            else if (Entrada[Posicao] == '/')
+            {
+                Posicao++;
+                NovoToken = new Token(TipoToken.DIV);
+            }
+            else if (Entrada[Posicao] == '%')
+            {
+                Posicao++;
+                NovoToken = new Token(TipoToken.RESTO);
+            }
+            else if (Entrada[Posicao] == '^')
+            {
+                Posicao++;
+                NovoToken = new Token(TipoToken.EXP);
             }
             else if (Entrada[Posicao] == '-')
             {
@@ -122,7 +171,7 @@ namespace CMPUCCompiler
 
         bool IsPalavraReservada(string lexema)
         {
-            return lexema == "fim" || lexema == "escreva";
+            return lexema == "fim" || lexema == "escreva" || lexema == "leia";
         }
 
         Token ObterTokenPalavraReservada(string lexema)
@@ -131,9 +180,11 @@ namespace CMPUCCompiler
             {
                 case "escreva":
                     return new Token(TipoToken.ESCREVA);
+                case "leia":
+                    return new Token(TipoToken.LEIA);
                 case "fim":
                     return new Token(TipoToken.FIM);
-                   
+
                 default:
                     return null;
             }

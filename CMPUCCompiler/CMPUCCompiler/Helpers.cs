@@ -33,9 +33,9 @@ namespace CMPUCCompiler
             return entrada;
         }
 
-        public static int ToInt(this object num)
+        public static double ToDouble(this object num)
         {
-            return Convert.ToInt32(num);
+            return Double.Parse(num.ToString(), System.Globalization.CultureInfo.InvariantCulture);
         }
 
     }
