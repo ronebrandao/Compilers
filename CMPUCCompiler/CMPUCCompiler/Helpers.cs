@@ -33,6 +33,14 @@ namespace CMPUCCompiler
             return entrada;
         }
 
+        public static void CriarEEscreverArquivo(string codigo)
+        {
+            using (var sr = new StreamWriter("assembly.s"))
+            {
+                sr.WriteLine(codigo);
+            }
+        }
+
         public static double ToDouble(this object num)
         {
             return Double.Parse(num.ToString(), System.Globalization.CultureInfo.InvariantCulture);

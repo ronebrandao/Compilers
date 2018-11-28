@@ -14,6 +14,7 @@ namespace CMPUCCompiler
         Token tokenAtual;
         Dictionary<string, double> tabelaVariaveis;
         Stack pilhaExpressoes;
+        StringBuilder Assembly;
         double operando1, operando2, resultado;
         string nomeVariavel;
 
@@ -28,8 +29,9 @@ namespace CMPUCCompiler
             scanner.Entrada = Helpers.LerArquivo(nomeArquivo);
         }
 
-        public void Analisar()
+        public void Analisar(StringBuilder sb)
         {
+            Assembly = sb;
             tokenAtual = scanner.ProximoToken();
 
             ListaInstrucoes();
@@ -83,6 +85,12 @@ namespace CMPUCCompiler
                 tokenAtual = scanner.ProximoToken();
 
                 string saida = "";
+
+                Assembly.AppendLine("move $a0, $t1");
+                Assembly.AppendLine("li $v0, 1");
+                Assembly.AppendLine("syscall");
+                Assembly.AppendLine();
+
                 ListaArgs();
 
                 VerificarToken(TipoToken.FECHA_PAREN);
@@ -179,6 +187,12 @@ namespace CMPUCCompiler
                 //Cálculo   
                 operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
                 operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
+
+                Assembly.AppendLine($"li $t1, {operando1}");
+                Assembly.AppendLine($"li $t2, {operando2}");
+                Assembly.AppendLine($"add $t1, $t1, $t2");
+                Assembly.AppendLine();
+
                 resultado = operando1 + operando2;
 
                 pilhaExpressoes.Push(resultado);
@@ -186,7 +200,7 @@ namespace CMPUCCompiler
                 RestanteExpressao();
             }
             else if (tokenAtual.Tipo == TipoToken.SUB)
-            {
+             {
                 VerificarToken(TipoToken.SUB);
                 tokenAtual = scanner.ProximoToken();
                 Termo();
@@ -194,6 +208,12 @@ namespace CMPUCCompiler
                 //Cálculo
                 operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
                 operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
+
+                Assembly.AppendLine($"li $t1, {operando1}");
+                Assembly.AppendLine($"li $t2, {operando2}");
+                Assembly.AppendLine($"sub $t1, $t1, $t2");
+                Assembly.AppendLine();
+
                 resultado = operando1 - operando2;
 
                 pilhaExpressoes.Push(resultado);
