@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace CMPUCCompiler
 {
@@ -87,7 +85,7 @@ namespace CMPUCCompiler
                 AdicionarValorTabela(nomeVariavel, valorExpr);
 
                 #region Desempilhamento e Atribuição
-                AssemblyInstrucoes.AppendLine("#DESEMPILHANDO E FAZENDO ATRIBUICAO");
+
                 AssemblyInstrucoes.AppendLine("lw $t4, ($sp)");
                 AssemblyInstrucoes.AppendLine($"sw $t4, {nomeVariavel}");
                 AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
@@ -145,7 +143,6 @@ namespace CMPUCCompiler
 
                         #region Imprimir Variavel
 
-                        AssemblyInstrucoes.AppendLine("#IMPRIMIR VARIAEL INTERIA");
                         AssemblyInstrucoes.AppendLine($"lw $a0, {nomeVariavel}");
                         AssemblyInstrucoes.AppendLine("li $v0, 1");
                         AssemblyInstrucoes.AppendLine("syscall");
@@ -162,9 +159,6 @@ namespace CMPUCCompiler
                         #region Imprimir Float
                         string NomeVar = "txt" + AssemblyVariaveis.Length;
                         AssemblyVariaveis.AppendLine($"{NomeVar}: .float {tokenAtual.Valor.ToString().Replace(",",".")}");
-
-
-                        AssemblyInstrucoes.AppendLine("#IMPRIMIR FLOAT");
 
                         AssemblyInstrucoes.AppendLine("li $v0, 2");
                         AssemblyInstrucoes.AppendLine($"l.s $f12, {NomeVar}");
@@ -186,7 +180,6 @@ namespace CMPUCCompiler
                         string NomeVar = "txt" + AssemblyVariaveis.Length;
                         AssemblyVariaveis.AppendLine($"{NomeVar}: .asciiz \"{str}\"");
 
-                        AssemblyInstrucoes.AppendLine("#IMPRIMIR STRING");
                         AssemblyInstrucoes.AppendLine("li $v0, 4");
                         AssemblyInstrucoes.AppendLine($"la $a0, {NomeVar}");
                         AssemblyInstrucoes.AppendLine("syscall");
@@ -267,7 +260,6 @@ namespace CMPUCCompiler
                 pilhaExpressoes.Push(resultado);
 
                 #region Soma e Empilhamento
-                AssemblyInstrucoes.AppendLine("#DESEMPILHANDO E SOMANDO");
                 AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
                 AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
 
@@ -276,7 +268,6 @@ namespace CMPUCCompiler
 
                 AssemblyInstrucoes.AppendLine("add $t2, $t0, $t1");
 
-                AssemblyInstrucoes.AppendLine("#EMPILHANDO O RESULTADO");
                 AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
                 AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
                 AssemblyInstrucoes.AppendLine();
@@ -335,7 +326,6 @@ namespace CMPUCCompiler
 
                 tokenAtual = scanner.ProximoToken();
 
-                AssemblyInstrucoes.AppendLine("#ARMAZENANDO A VARIAVEL BASE NA PILHA");
                 AssemblyInstrucoes.AppendLine($"lw $t5, {nomeVar}");
                 AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
                 AssemblyInstrucoes.AppendLine("sw $t5, ($sp)");
@@ -351,7 +341,6 @@ namespace CMPUCCompiler
 
                 tokenAtual = scanner.ProximoToken();
 
-                AssemblyInstrucoes.AppendLine("#ARMAZENANDO O NUMERO NA PILHA");
                 AssemblyInstrucoes.AppendLine($"li $t5, {valor.ToString()}");
                 AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
                 AssemblyInstrucoes.AppendLine("sw $t5, ($sp)");
