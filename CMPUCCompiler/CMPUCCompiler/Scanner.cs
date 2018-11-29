@@ -9,14 +9,14 @@ namespace CMPUCCompiler
         public string Entrada { get; set; }
         public int Posicao { get; set; }
 
-        Dictionary<string, double> tabelaVariaveis;
+        Dictionary<string, dynamic> tabelaVariaveis;
 
         public Scanner()
         {
 
         }
 
-        public Scanner(Dictionary<string, double> tab)
+        public Scanner(Dictionary<string, dynamic> tab)
         {
             tabelaVariaveis = tab;
         }
@@ -103,7 +103,7 @@ namespace CMPUCCompiler
                     Posicao++;
                 }
 
-                NovoToken = new Token(TipoToken.STRING, lexema);
+                NovoToken = new Token(TipoToken.STRING, lexema, "");
 
             }
             else if (Entrada[Posicao] == ',')

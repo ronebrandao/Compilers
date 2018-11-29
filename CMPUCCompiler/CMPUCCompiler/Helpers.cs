@@ -40,6 +40,10 @@ namespace CMPUCCompiler
                 sr.WriteLine(codigo);
             }
         }
+        public static bool IsNumber(this string str)
+        {
+            return int.TryParse(str, out int number);
+        }
 
         public static double ToDouble(this object num)
         {

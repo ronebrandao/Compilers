@@ -12,26 +12,30 @@ namespace CMPUCCompiler
     {
         Scanner scanner;
         Token tokenAtual;
-        Dictionary<string, double> tabelaVariaveis;
+        Dictionary<string, dynamic> tabelaVariaveis;
         Stack pilhaExpressoes;
-        StringBuilder Assembly;
+
         double operando1, operando2, resultado;
         string nomeVariavel;
 
+        public StringBuilder AssemblyVariaveis { get; set; }
+        public StringBuilder AssemblyInstrucoes { get; set; }
         public bool Status { get; set; }
 
         public Interpreter(string nomeArquivo)
         {
-            tabelaVariaveis = new Dictionary<string, double>();
+            tabelaVariaveis = new Dictionary<string, dynamic>();
             pilhaExpressoes = new Stack();
 
             scanner = new Scanner(tabelaVariaveis);
             scanner.Entrada = Helpers.LerArquivo(nomeArquivo);
         }
 
-        public void Analisar(StringBuilder sb)
+        public void Analisar()
         {
-            Assembly = sb;
+            AssemblyVariaveis = new StringBuilder();
+            AssemblyInstrucoes = new StringBuilder();
+
             tokenAtual = scanner.ProximoToken();
 
             ListaInstrucoes();
@@ -67,6 +71,13 @@ namespace CMPUCCompiler
                 nomeVariavel = tokenAtual.Nome;
                 tokenAtual = scanner.ProximoToken();
 
+                #region Declaração de Variáveis
+
+                AssemblyVariaveis.Append(nomeVariavel);
+                AssemblyVariaveis.AppendLine(": .word 0");
+
+                #endregion
+
                 VerificarToken(TipoToken.ATRIBUICAO);
                 tokenAtual = scanner.ProximoToken();
                 Expressao();
@@ -74,6 +85,15 @@ namespace CMPUCCompiler
                 double valorExpr = Convert.ToDouble(pilhaExpressoes.Pop());
 
                 AdicionarValorTabela(nomeVariavel, valorExpr);
+
+                #region Desempilhamento e Atribuição
+                AssemblyInstrucoes.AppendLine("#DESEMPILHANDO E FAZENDO ATRIBUICAO");
+                AssemblyInstrucoes.AppendLine("lw $t4, ($sp)");
+                AssemblyInstrucoes.AppendLine($"sw $t4, {nomeVariavel}");
+                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+                AssemblyInstrucoes.AppendLine();
+
+                #endregion
 
             }
             else if (tokenAtual.Tipo == TipoToken.ESCREVA)
@@ -85,11 +105,6 @@ namespace CMPUCCompiler
                 tokenAtual = scanner.ProximoToken();
 
                 string saida = "";
-
-                Assembly.AppendLine("move $a0, $t1");
-                Assembly.AppendLine("li $v0, 1");
-                Assembly.AppendLine("syscall");
-                Assembly.AppendLine();
 
                 ListaArgs();
 
@@ -127,6 +142,16 @@ namespace CMPUCCompiler
                         tokenAtual = scanner.ProximoToken();
 
                         saida += tabelaVariaveis.FirstOrDefault(variavel => variavel.Key == nomeVariavel).Value + " ";
+
+                        #region Imprimir Variavel
+
+                        AssemblyInstrucoes.AppendLine("#IMPRIMIR VARIAEL INTERIA");
+                        AssemblyInstrucoes.AppendLine($"lw $a0, {nomeVariavel}");
+                        AssemblyInstrucoes.AppendLine("li $v0, 1");
+                        AssemblyInstrucoes.AppendLine("syscall");
+
+                        #endregion
+
                     }
                     else if (tokenAtual.Tipo == TipoToken.NUMERO)
                     {
@@ -134,14 +159,39 @@ namespace CMPUCCompiler
 
                         saida += tokenAtual.Valor + " ";
 
+                        #region Imprimir Float
+                        string NomeVar = "txt" + AssemblyVariaveis.Length;
+                        AssemblyVariaveis.AppendLine($"{NomeVar}: .float {tokenAtual.Valor.ToString().Replace(",",".")}");
+
+
+                        AssemblyInstrucoes.AppendLine("#IMPRIMIR FLOAT");
+
+                        AssemblyInstrucoes.AppendLine("li $v0, 2");
+                        AssemblyInstrucoes.AppendLine($"l.s $f12, {NomeVar}");
+                        AssemblyInstrucoes.AppendLine("syscall");
+
+                        #endregion
+
                         tokenAtual = scanner.ProximoToken();
 
                     }
                     else if (tokenAtual.Tipo == TipoToken.STRING)
                     {
                         VerificarToken(TipoToken.STRING);
+                        string str = tokenAtual.Nome.Replace("\"", "");
+                        saida += str + " ";
 
-                        saida += tokenAtual.Nome + " ";
+                        #region Imprimir String
+                        
+                        string NomeVar = "txt" + AssemblyVariaveis.Length;
+                        AssemblyVariaveis.AppendLine($"{NomeVar}: .asciiz \"{str}\"");
+
+                        AssemblyInstrucoes.AppendLine("#IMPRIMIR STRING");
+                        AssemblyInstrucoes.AppendLine("li $v0, 4");
+                        AssemblyInstrucoes.AppendLine($"la $a0, {NomeVar}");
+                        AssemblyInstrucoes.AppendLine("syscall");
+
+                        #endregion
 
                         tokenAtual = scanner.ProximoToken();
                     }
@@ -158,9 +208,34 @@ namespace CMPUCCompiler
 
                 VerificarToken(TipoToken.VARIAVEL);
                 nomeVariavel = tokenAtual.Nome;
-                tokenAtual.Valor = Convert.ToDouble(Console.ReadLine());
 
-                AdicionarValorTabela(nomeVariavel, tokenAtual.Valor);
+                string input = Console.ReadLine();
+
+                if (!tabelaVariaveis.ContainsKey(tokenAtual.Nome))
+                {
+                    AssemblyVariaveis.AppendLine($"{tokenAtual.Nome}: .word 0");
+                }
+
+                if (input.IsNumber())
+                {
+                    tokenAtual.Valor = Convert.ToDouble(input);
+
+                    AdicionarValorTabela(nomeVariavel, tokenAtual.Valor);
+                }
+                else
+                {
+                    tokenAtual.ValorString = input;
+                    AdicionarValorTabela(nomeVariavel, tokenAtual.ValorString);
+                }
+
+                #region Ler Entrada
+
+                AssemblyInstrucoes.AppendLine("li $v0, 5");
+                AssemblyInstrucoes.AppendLine("syscall");
+
+                AssemblyInstrucoes.AppendLine($"sw $v0, {nomeVariavel}");
+
+                #endregion
 
                 tokenAtual = scanner.ProximoToken();
 
@@ -187,15 +262,26 @@ namespace CMPUCCompiler
                 //Cálculo   
                 operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
                 operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
-
-                Assembly.AppendLine($"li $t1, {operando1}");
-                Assembly.AppendLine($"li $t2, {operando2}");
-                Assembly.AppendLine($"add $t1, $t1, $t2");
-                Assembly.AppendLine();
-
+                
                 resultado = operando1 + operando2;
-
                 pilhaExpressoes.Push(resultado);
+
+                #region Soma e Empilhamento
+                AssemblyInstrucoes.AppendLine("#DESEMPILHANDO E SOMANDO");
+                AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
+                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+
+                AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
+                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+
+                AssemblyInstrucoes.AppendLine("add $t2, $t0, $t1");
+
+                AssemblyInstrucoes.AppendLine("#EMPILHANDO O RESULTADO");
+                AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
+                AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
+                AssemblyInstrucoes.AppendLine();
+
+                #endregion
 
                 RestanteExpressao();
             }
@@ -209,14 +295,24 @@ namespace CMPUCCompiler
                 operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
                 operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
 
-                Assembly.AppendLine($"li $t1, {operando1}");
-                Assembly.AppendLine($"li $t2, {operando2}");
-                Assembly.AppendLine($"sub $t1, $t1, $t2");
-                Assembly.AppendLine();
-
                 resultado = operando1 - operando2;
-
                 pilhaExpressoes.Push(resultado);
+
+                #region Subtração e Empilhamento
+
+                AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
+                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+
+                AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
+                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+
+                AssemblyInstrucoes.AppendLine("sub $t2, $t0, $t1");
+
+                AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
+                AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
+                AssemblyInstrucoes.AppendLine();
+
+                #endregion
 
                 RestanteExpressao();
             }
@@ -235,8 +331,15 @@ namespace CMPUCCompiler
             {
                 VerificarToken(TipoToken.VARIAVEL);
                 pilhaExpressoes.Push(tabelaVariaveis.FirstOrDefault(variavel => variavel.Key == tokenAtual.Nome).Value);
+                string nomeVar = tokenAtual.Nome;
 
                 tokenAtual = scanner.ProximoToken();
+
+                AssemblyInstrucoes.AppendLine("#ARMAZENANDO A VARIAVEL BASE NA PILHA");
+                AssemblyInstrucoes.AppendLine($"lw $t5, {nomeVar}");
+                AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
+                AssemblyInstrucoes.AppendLine("sw $t5, ($sp)");
+                AssemblyInstrucoes.AppendLine();
 
                 Potencia();
             }
@@ -244,8 +347,15 @@ namespace CMPUCCompiler
             {
                 VerificarToken(TipoToken.NUMERO);
                 pilhaExpressoes.Push(tokenAtual.Valor);
+                double valor = tokenAtual.Valor;
 
                 tokenAtual = scanner.ProximoToken();
+
+                AssemblyInstrucoes.AppendLine("#ARMAZENANDO O NUMERO NA PILHA");
+                AssemblyInstrucoes.AppendLine($"li $t5, {valor.ToString()}");
+                AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
+                AssemblyInstrucoes.AppendLine("sw $t5, ($sp)");
+                AssemblyInstrucoes.AppendLine();
 
                 Potencia();
             }
@@ -277,6 +387,21 @@ namespace CMPUCCompiler
 
                 pilhaExpressoes.Push(resultado);
 
+                #region Multiplicação e Empilhamento
+
+                AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
+                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+
+                AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
+                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+
+                AssemblyInstrucoes.AppendLine("mul $t2, $t0, $t1");
+
+                AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
+                AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
+
+                #endregion
+
                 RestoTermo();
             }
             else if (tokenAtual.Tipo == TipoToken.DIV)
@@ -298,6 +423,21 @@ namespace CMPUCCompiler
                 resultado = operando1 / operando2;
 
                 pilhaExpressoes.Push(resultado);
+
+                #region Divisão e Empilhamento
+
+                AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
+                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+
+                AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
+                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+
+                AssemblyInstrucoes.AppendLine("div $t2, $t0, $t1");
+
+                AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
+                AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
+
+                #endregion
 
                 RestoTermo();
             }
@@ -321,6 +461,21 @@ namespace CMPUCCompiler
 
                 pilhaExpressoes.Push(resultado);
 
+                #region Resto e Empilhamento
+
+                AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
+                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+
+                AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
+                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+
+                AssemblyInstrucoes.AppendLine("rem $t2, $t0, $t1");
+
+                AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
+                AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
+
+                #endregion
+
                 RestoTermo();
             }
             else;
@@ -338,6 +493,30 @@ namespace CMPUCCompiler
                 operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
                 operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
                 resultado = Math.Pow(operando1, operando2);
+
+                #region Potencia 
+
+                AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
+                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+
+                AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
+                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+                
+                AssemblyInstrucoes.AppendLine("li $t2, 1");
+                AssemblyInstrucoes.AppendLine("li $t5, 1");
+
+                AssemblyInstrucoes.AppendLine("for:");
+                AssemblyInstrucoes.AppendLine("beq $t1, $zero, fim");
+                AssemblyInstrucoes.AppendLine("mul $t2, $t2, $t0");
+                AssemblyInstrucoes.AppendLine("sub $t1, $t1, $t5");
+
+                AssemblyInstrucoes.AppendLine("j for");
+
+                AssemblyInstrucoes.AppendLine("fim:");
+                AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
+                AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
+
+                #endregion
 
                 pilhaExpressoes.Push(resultado);
             }
@@ -360,7 +539,7 @@ namespace CMPUCCompiler
 
         }
 
-        private void AdicionarValorTabela(string nomeVariavel, double valor)
+        private void AdicionarValorTabela(string nomeVariavel, dynamic valor)
         {
             if (tabelaVariaveis.ContainsKey(nomeVariavel))
             {

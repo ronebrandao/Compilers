@@ -8,18 +8,20 @@ namespace CMPUCCompiler
     {
         public static void Main(string[] args)
         {
+            Interpreter parser = new Interpreter("teste.txt");
+            parser.Analisar();
+
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(".data");
+
+            sb.AppendLine(parser.AssemblyVariaveis.ToString());
+            
             sb.AppendLine(".text");
-            sb.AppendLine(".global main");
+            sb.AppendLine(".globl main");
             sb.AppendLine("main:");
+            sb.AppendLine();
 
-            Interpreter parser = new Interpreter("teste.txt");
-            parser.Analisar(sb);
-
-            sb.AppendLine("li $v0, 10");
-            sb.AppendLine("syscall");
-            sb.AppendLine(".end main");
+            sb.AppendLine(parser.AssemblyInstrucoes.ToString());
 
             Helpers.CriarEEscreverArquivo(sb.ToString());
 
