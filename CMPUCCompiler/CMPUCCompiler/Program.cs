@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 
 namespace CMPUCCompiler
 {
@@ -7,8 +8,22 @@ namespace CMPUCCompiler
     {
         public static void Main(string[] args)
         {
-            Interpreter parser = new Interpreter("main.txt");
+            Interpreter parser = new Interpreter("teste.txt");
             parser.Analisar();
+
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine(".data");
+
+            sb.AppendLine(parser.AssemblyVariaveis.ToString());
+            
+            sb.AppendLine(".text");
+            sb.AppendLine(".globl main");
+            sb.AppendLine("main:");
+            sb.AppendLine();
+
+            sb.AppendLine(parser.AssemblyInstrucoes.ToString());
+
+            Helpers.CriarEEscreverArquivo(sb.ToString());
 
             if (parser.Status)
             {
