@@ -50,6 +50,10 @@ namespace CMPUCCompiler
                 tokenAtual = scanner.ProximoToken();
                 ListaInstrucoes();
             }
+            else if (tokenAtual.Tipo == TipoToken.SE)
+            {
+                Instrucao();
+            }
             else if (tokenAtual.Tipo == TipoToken.ERRO)
             {
                 return;
@@ -235,6 +239,105 @@ namespace CMPUCCompiler
                 VerificarToken(TipoToken.FECHA_PAREN);
                 tokenAtual = scanner.ProximoToken();
 
+            }
+            else if (tokenAtual.Tipo == TipoToken.SE)
+            {
+                VerificarToken(TipoToken.SE);
+                tokenAtual = scanner.ProximoToken();
+
+                SintaxeCondicional();
+
+                RestoIF();
+
+                void RestoIF()
+                {
+                    VerificarToken(TipoToken.SENAO_SE);
+                    tokenAtual = scanner.ProximoToken();
+
+                    SintaxeCondicional();
+
+                    RestoIF2();
+                }
+
+                void RestoIF2()
+                {
+                    VerificarToken(TipoToken.SENAO);
+                    tokenAtual = scanner.ProximoToken();
+
+                    VerificarToken(TipoToken.ABRE_CHAVE);
+                    tokenAtual = scanner.ProximoToken();
+
+                    ListaInstrucoes();
+
+                    VerificarToken(TipoToken.FECHA_CHAVE);
+                    tokenAtual = scanner.ProximoToken();
+
+                }
+
+                void ExpressaoRelacional()
+                {
+                    Expressao();
+
+                    OperacaoRelacional();
+
+                    Expressao();
+                }
+
+                void OperacaoRelacional()
+                {
+                    if (tokenAtual.Tipo == TipoToken.MENOR)
+                    {
+
+                    }   
+                    else if (tokenAtual.Tipo == TipoToken.MENOR_IGUAL)
+                    {
+
+                    }
+                    else if (tokenAtual.Tipo == TipoToken.MAIOR)
+                    {
+
+                    }
+                    else if (tokenAtual.Tipo == TipoToken.MAIOR_IGUAL)
+                    {
+
+                    }
+                    else if (tokenAtual.Tipo == TipoToken.IGUAL)
+                    {
+
+                    }
+                    else if (tokenAtual.Tipo == TipoToken.DIFERENTE)
+                    {
+
+                    }
+                    else
+                    {
+                        Booleano();
+                    }
+                }
+
+                void Booleano()
+                {
+                    if (tokenAtual)
+                }
+
+                void SintaxeCondicional()
+                {
+                    VerificarToken(TipoToken.ABRE_PAREN);
+                    tokenAtual = scanner.ProximoToken();
+
+                    ExpressaoRelacional();
+
+                    VerificarToken(TipoToken.FECHA_PAREN);
+                    tokenAtual = scanner.ProximoToken();
+
+                    VerificarToken(TipoToken.ABRE_CHAVE);
+                    tokenAtual = scanner.ProximoToken();
+
+                    ListaInstrucoes();
+
+                    VerificarToken(TipoToken.FECHA_CHAVE);
+                    tokenAtual = scanner.ProximoToken();
+                }
             }
         }
 
