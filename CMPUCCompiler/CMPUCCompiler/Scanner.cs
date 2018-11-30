@@ -114,8 +114,15 @@ namespace CMPUCCompiler
             else if (Entrada[Posicao] == '=')
             {
                 Posicao++;
-                NovoToken = new Token(TipoToken.ATRIBUICAO);
+
+                if (Entrada[Posicao] == '=')
+                    NovoToken = new Token(TipoToken.IGUAL);
+                else
+                    NovoToken = new Token(TipoToken.ATRIBUICAO);
             }
+
+            #region Operadores Aritméticos
+
             else if (Entrada[Posicao] == '+')
             {
                 Posicao++;
@@ -146,6 +153,53 @@ namespace CMPUCCompiler
                 Posicao++;
                 NovoToken = new Token(TipoToken.SUB);
             }
+
+            #endregion
+
+            #region Operadores de Comparação
+
+            else if (Entrada[Posicao] == '<')
+            {
+                Posicao++;
+
+                if (Entrada[Posicao] == '=')
+                    NovoToken = new Token(TipoToken.MENOR_IGUAL);
+                else
+                    NovoToken = new Token(TipoToken.MENOR);
+            }
+
+            else if (Entrada[Posicao] == '>')
+            {
+                Posicao++;
+
+                if (Entrada[Posicao] == '=')
+                    NovoToken = new Token(TipoToken.MAIOR_IGUAL);
+                else
+                    NovoToken = new Token(TipoToken.MAIOR);
+
+            }
+
+            else if (Entrada[Posicao] == '!')
+            {
+                Posicao++;
+
+                if (Entrada[Posicao] == '=')
+                    NovoToken = new Token(TipoToken.DIFERENTE);
+
+            }
+
+            #endregion
+
+            else if (Entrada[Posicao] == '{')
+            {
+                Posicao++;
+                NovoToken = new Token(TipoToken.ABRE_CHAVE);
+            }
+            else if (Entrada[Posicao] == '}')
+            {
+                Posicao++;
+                NovoToken = new Token(TipoToken.FECHA_CHAVE);
+            }
             else if (Entrada[Posicao] == '(')
             {
                 Posicao++;
@@ -171,7 +225,10 @@ namespace CMPUCCompiler
 
         bool IsPalavraReservada(string lexema)
         {
-            return lexema == "fim" || lexema == "escreva" || lexema == "leia";
+            return lexema == "fim" 
+                || lexema == "escreva" || lexema == "leia"
+                || lexema == "se" || lexema == "senao" || lexema == "senao_se" 
+                || lexema == "enquanto";
         }
 
         Token ObterTokenPalavraReservada(string lexema)
@@ -184,6 +241,14 @@ namespace CMPUCCompiler
                     return new Token(TipoToken.LEIA);
                 case "fim":
                     return new Token(TipoToken.FIM);
+                case "se":
+                    return new Token(TipoToken.SE);
+                case "senao":
+                    return new Token(TipoToken.SENAO);
+                case "senao_se":
+                    return new Token(TipoToken.SENAO_SE);
+                case "enquanto":
+                    return new Token(TipoToken.ENQUANTO);
 
                 default:
                     return null;
