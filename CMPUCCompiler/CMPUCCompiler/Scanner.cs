@@ -116,9 +116,14 @@ namespace CMPUCCompiler
                 Posicao++;
 
                 if (Entrada[Posicao] == '=')
+                {
                     NovoToken = new Token(TipoToken.IGUAL);
+                    Posicao++;
+                }
                 else
+                {
                     NovoToken = new Token(TipoToken.ATRIBUICAO);
+                }
             }
 
             #region Operadores Aritméticos
@@ -163,9 +168,14 @@ namespace CMPUCCompiler
                 Posicao++;
 
                 if (Entrada[Posicao] == '=')
+                {
                     NovoToken = new Token(TipoToken.MENOR_IGUAL);
+                    Posicao++;
+                }
                 else
+                {
                     NovoToken = new Token(TipoToken.MENOR);
+                }
             }
 
             else if (Entrada[Posicao] == '>')
@@ -173,10 +183,14 @@ namespace CMPUCCompiler
                 Posicao++;
 
                 if (Entrada[Posicao] == '=')
+                {
                     NovoToken = new Token(TipoToken.MAIOR_IGUAL);
+                    Posicao++;
+                }
                 else
+                {
                     NovoToken = new Token(TipoToken.MAIOR);
-
+                }
             }
 
             else if (Entrada[Posicao] == '!')
@@ -184,7 +198,10 @@ namespace CMPUCCompiler
                 Posicao++;
 
                 if (Entrada[Posicao] == '=')
+                {
                     NovoToken = new Token(TipoToken.DIFERENTE);
+                    Posicao++;
+                }
 
             }
 
