@@ -26,6 +26,7 @@ namespace CMPUCCompiler
         MAIOR_IGUAL,
         IGUAL,
         DIFERENTE,
+        BOOLEAN,
         ESCREVA,
         LEIA,
         VIRGULA,
@@ -40,6 +41,7 @@ namespace CMPUCCompiler
         public TipoToken Tipo { get; }
         public double Valor { get; set; }
         public string ValorString { get; set; }
+        public bool ValorBool { get; set; }
         public string Nome { get; }
 
         public Token(TipoToken tipo)
@@ -65,6 +67,13 @@ namespace CMPUCCompiler
             Tipo = tipo;
             Nome = nome;
             ValorString = valor;
+        }
+
+        public Token(TipoToken tipo, string nome, bool valor)
+        {
+            Tipo = tipo;
+            Nome = nome;
+            ValorBool = valor;
         }
 
         public override string ToString() => $"Tipo: {Tipo.ToString()} | Nome: {Nome ?? "null"} | Valor: {(Valor.ToString()?.Length == 0 ? "null" : Valor.ToString())}";

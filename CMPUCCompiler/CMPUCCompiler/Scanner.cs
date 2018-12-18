@@ -244,8 +244,8 @@ namespace CMPUCCompiler
         {
             return lexema == "fim" 
                 || lexema == "escreva" || lexema == "leia"
-                || lexema == "se" || lexema == "senao" || lexema == "senao_se" 
-                || lexema == "enquanto";
+                || lexema == "se" || lexema == "senao" || lexema == "enquanto"
+                || lexema == "true" || lexema == "false";
         }
 
         Token ObterTokenPalavraReservada(string lexema)
@@ -261,11 +261,30 @@ namespace CMPUCCompiler
                 case "se":
                     return new Token(TipoToken.SE);
                 case "senao":
+
+                    if (Entrada[Posicao] == '_') {
+                        lexema += Entrada[Posicao];
+                        Posicao++;
+
+                        while (IsLetter(Entrada[Posicao]))
+                        {
+                            lexema += Entrada[Posicao];
+                            Posicao++;
+                        }
+                        if (lexema == "senao_se")
+                            return new Token(TipoToken.SENAO_SE);
+                        else
+                            return new Token(TipoToken.ERRO);
+
+                    }
+
                     return new Token(TipoToken.SENAO);
-                case "senao_se":
-                    return new Token(TipoToken.SENAO_SE);
                 case "enquanto":
                     return new Token(TipoToken.ENQUANTO);
+                case "true":
+                    return new Token(TipoToken.BOOLEAN, "", true);
+                case "false":
+                    return new Token(TipoToken.BOOLEAN, "", false);
 
                 default:
                     return null;
