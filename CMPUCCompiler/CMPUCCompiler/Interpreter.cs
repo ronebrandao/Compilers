@@ -6,901 +6,887 @@ using System.Text;
 
 namespace CMPUCCompiler
 {
-    class Interpreter
-    {
-        Scanner scanner;
-        Token tokenAtual;
-        Dictionary<string, dynamic> tabelaVariaveis;
-        Stack pilhaExpressoes;
-
-        double operando1, operando2, resultado;
-        string nomeVariavel;
-        bool dentroBloco;
-        int chamadas = 0;
-
-        public StringBuilder AssemblyVariaveis { get; set; }
-        public StringBuilder AssemblyInstrucoes { get; set; }
-        public bool Status { get; set; }
-
-        public Interpreter(string nomeArquivo)
-        {
-            tabelaVariaveis = new Dictionary<string, dynamic>();
-            pilhaExpressoes = new Stack();
-
-            scanner = new Scanner(tabelaVariaveis);
-            scanner.Entrada = Helpers.LerArquivo(nomeArquivo);
-        }
-
-        public void Analisar()
-        {
-            AssemblyVariaveis = new StringBuilder();
-            AssemblyInstrucoes = new StringBuilder();
-
-            tokenAtual = scanner.ProximoToken();
-
-            ListaInstrucoes();
-
-        }
-
-        private void ListaInstrucoes()
-        {
-            if (tokenAtual.Tipo == TipoToken.VARIAVEL
-                || tokenAtual.Tipo == TipoToken.ESCREVA
-                || tokenAtual.Tipo == TipoToken.LEIA)
-            {
-                Instrucao();
-                VerificarToken(TipoToken.PV);
-                tokenAtual = scanner.ProximoToken();
-                ListaInstrucoes();
-            }
-            else if (tokenAtual.Tipo == TipoToken.SE || tokenAtual.Tipo == TipoToken.ENQUANTO)
-            {
-                Instrucao();
-                ListaInstrucoes();
-            }
-            else if (tokenAtual.Tipo == TipoToken.ERRO)
-            {
-                return;
-            }
-            else
-            {
-                if (!dentroBloco)
-                {
-                    VerificarToken(TipoToken.FIM);
-                    tokenAtual = scanner.ProximoToken();
-                }
-            }
-        }
-
-        private void Instrucao()
-        {
-
-
-            if (tokenAtual.Tipo == TipoToken.VARIAVEL)
-            {
-                VerificarToken(TipoToken.VARIAVEL);
-                nomeVariavel = tokenAtual.Nome;
-                tokenAtual = scanner.ProximoToken();
-
-                VerificarToken(TipoToken.ATRIBUICAO);
-                tokenAtual = scanner.ProximoToken();
-                Expressao();
-
-                var valor = pilhaExpressoes.Pop();
-
-                if (valor is double valorExpr)
-                {
-                    AdicionarValorTabela(nomeVariavel, valorExpr);
-                }
-                else if (valor is bool valorBool)
-                {
-                    AdicionarValorTabela(nomeVariavel, valorBool);
-                }
-
-            }
-            else if (tokenAtual.Tipo == TipoToken.ESCREVA)
-            {
-                VerificarToken(TipoToken.ESCREVA);
-                tokenAtual = scanner.ProximoToken();
-
-                VerificarToken(TipoToken.ABRE_PAREN);
-                tokenAtual = scanner.ProximoToken();
-
-                string saida = "";
+	class Interpreter
+	{
+		Scanner scanner;
+		Token tokenAtual;
+		Dictionary<string, dynamic> tabelaVariaveis;
+		Stack pilhaExpressoes;
+
+		double operando1, operando2, resultado;
+		string nomeVariavel;
+		bool dentroBloco;
+		int chamadas = 0;
+
+		public StringBuilder AssemblyVariaveis { get; set; }
+		public StringBuilder AssemblyInstrucoes { get; set; }
+		public bool Status { get; set; }
+
+		public Interpreter(string nomeArquivo)
+		{
+			tabelaVariaveis = new Dictionary<string, dynamic>();
+			pilhaExpressoes = new Stack();
+
+			scanner = new Scanner(tabelaVariaveis);
+			scanner.Entrada = Helpers.LerArquivo(nomeArquivo);
+		}
+
+		public void Analisar()
+		{
+			AssemblyVariaveis = new StringBuilder();
+			AssemblyInstrucoes = new StringBuilder();
+
+			tokenAtual = scanner.ProximoToken();
+
+			ListaInstrucoes();
+
+		}
+
+		private void ListaInstrucoes()
+		{
+			if (tokenAtual.Tipo == TipoToken.VARIAVEL
+				|| tokenAtual.Tipo == TipoToken.ESCREVA
+				|| tokenAtual.Tipo == TipoToken.LEIA)
+			{
+				Instrucao();
+				VerificarToken(TipoToken.PV);
+				tokenAtual = scanner.ProximoToken();
+				ListaInstrucoes();
+			}
+			else if (tokenAtual.Tipo == TipoToken.SE || tokenAtual.Tipo == TipoToken.ENQUANTO)
+			{
+				Instrucao();
+				ListaInstrucoes();
+			}
+			else if (tokenAtual.Tipo == TipoToken.ERRO)
+			{
+				return;
+			}
+			else
+			{
+				if (!dentroBloco)
+				{
+					VerificarToken(TipoToken.FIM);
+					tokenAtual = scanner.ProximoToken();
+				}
+			}
+		}
+
+		private void Instrucao()
+		{
+
+
+			if (tokenAtual.Tipo == TipoToken.VARIAVEL)
+			{
+				VerificarToken(TipoToken.VARIAVEL);
+				nomeVariavel = tokenAtual.Nome;
+				tokenAtual = scanner.ProximoToken();
+
+				VerificarToken(TipoToken.ATRIBUICAO);
+				tokenAtual = scanner.ProximoToken();
+				Expressao();
+
+				var valor = pilhaExpressoes.Pop();
+
+				if (valor is double valorExpr)
+				{
+					AdicionarValorTabela(nomeVariavel, valorExpr);
+				}
+				else if (valor is bool valorBool)
+				{
+					AdicionarValorTabela(nomeVariavel, valorBool);
+				}
+
+			}
+			else if (tokenAtual.Tipo == TipoToken.ESCREVA)
+			{
+				VerificarToken(TipoToken.ESCREVA);
+				tokenAtual = scanner.ProximoToken();
+
+				VerificarToken(TipoToken.ABRE_PAREN);
+				tokenAtual = scanner.ProximoToken();
+
+				string saida = "";
 
-                ListaArgs();
+				ListaArgs();
 
-                VerificarToken(TipoToken.FECHA_PAREN);
-                tokenAtual = scanner.ProximoToken();
+				VerificarToken(TipoToken.FECHA_PAREN);
+				tokenAtual = scanner.ProximoToken();
 
 
-                void ListaArgs()
-                {
-                    Argumento();
-                    RestoArgs();
+				void ListaArgs()
+				{
+					Argumento();
+					RestoArgs();
 
-                    Console.WriteLine(saida);
-                }
+					Console.WriteLine(saida);
+				}
 
-                void RestoArgs()
-                {
-                    if (tokenAtual.Tipo == TipoToken.VIRGULA)
-                    {
-                        VerificarToken(TipoToken.VIRGULA);
-                        tokenAtual = scanner.ProximoToken();
+				void RestoArgs()
+				{
+					if (tokenAtual.Tipo == TipoToken.VIRGULA)
+					{
+						VerificarToken(TipoToken.VIRGULA);
+						tokenAtual = scanner.ProximoToken();
 
-                        Argumento();
-                        RestoArgs();
-                    }
-                    else;
-                }
+						Argumento();
+						RestoArgs();
+					}
+					else;
+				}
 
-                void Argumento()
-                {
-                    if (tokenAtual.Tipo == TipoToken.VARIAVEL)
-                    {
-                        VerificarToken(TipoToken.VARIAVEL);
-                        nomeVariavel = tokenAtual.Nome;
-                        tokenAtual = scanner.ProximoToken();
+				void Argumento()
+				{
+					if (tokenAtual.Tipo == TipoToken.VARIAVEL)
+					{
+						VerificarToken(TipoToken.VARIAVEL);
+						nomeVariavel = tokenAtual.Nome;
+						tokenAtual = scanner.ProximoToken();
 
-                        saida += tabelaVariaveis.FirstOrDefault(variavel => variavel.Key == nomeVariavel).Value + " ";
+						saida += tabelaVariaveis.FirstOrDefault(variavel => variavel.Key == nomeVariavel).Value + " ";
 
-                        #region Imprimir Variavel
+						#region Imprimir Variavel
 
-                        AssemblyInstrucoes.AppendLine($"lw $a0, {nomeVariavel}");
-                        AssemblyInstrucoes.AppendLine("li $v0, 1");
-                        AssemblyInstrucoes.AppendLine("syscall");
+						AssemblyInstrucoes.AppendLine($"lw $a0, {nomeVariavel}");
+						AssemblyInstrucoes.AppendLine("li $v0, 1");
+						AssemblyInstrucoes.AppendLine("syscall");
 
-                        #endregion
+						#endregion
 
-                    }
-                    else if (tokenAtual.Tipo == TipoToken.NUMERO)
-                    {
-                        VerificarToken(TipoToken.NUMERO);
+					}
+					else if (tokenAtual.Tipo == TipoToken.NUMERO)
+					{
+						VerificarToken(TipoToken.NUMERO);
 
-                        saida += tokenAtual.Valor + " ";
+						saida += tokenAtual.Valor + " ";
 
-                        #region Imprimir Float
-                        string NomeVar = "txt" + AssemblyVariaveis.Length;
-                        AssemblyVariaveis.AppendLine($"{NomeVar}: .float {tokenAtual.Valor.ToString().Replace(",", ".")}");
+						#region Imprimir Float
+						string NomeVar = "txt" + AssemblyVariaveis.Length;
+						AssemblyVariaveis.AppendLine($"{NomeVar}: .float {tokenAtual.Valor.ToString().Replace(",", ".")}");
 
-                        AssemblyInstrucoes.AppendLine("li $v0, 2");
-                        AssemblyInstrucoes.AppendLine($"l.s $f12, {NomeVar}");
-                        AssemblyInstrucoes.AppendLine("syscall");
+						AssemblyInstrucoes.AppendLine("li $v0, 2");
+						AssemblyInstrucoes.AppendLine($"l.s $f12, {NomeVar}");
+						AssemblyInstrucoes.AppendLine("syscall");
 
-                        #endregion
+						#endregion
 
-                        tokenAtual = scanner.ProximoToken();
+						tokenAtual = scanner.ProximoToken();
 
-                    }
-                    else if (tokenAtual.Tipo == TipoToken.STRING)
-                    {
-                        VerificarToken(TipoToken.STRING);
-                        string str = tokenAtual.Nome.Replace("\"", "");
-                        saida += str + " ";
+					}
+					else if (tokenAtual.Tipo == TipoToken.STRING)
+					{
+						VerificarToken(TipoToken.STRING);
+						string str = tokenAtual.Nome.Replace("\"", "");
+						saida += str + " ";
 
-                        #region Imprimir String
+						#region Imprimir String
 
-                        string NomeVar = "txt" + AssemblyVariaveis.Length;
-                        AssemblyVariaveis.AppendLine($"{NomeVar}: .asciiz \"{str}\"");
+						string NomeVar = "txt" + AssemblyVariaveis.Length;
+						AssemblyVariaveis.AppendLine($"{NomeVar}: .asciiz \"{str}\"");
 
-                        AssemblyInstrucoes.AppendLine("li $v0, 4");
-                        AssemblyInstrucoes.AppendLine($"la $a0, {NomeVar}");
-                        AssemblyInstrucoes.AppendLine("syscall");
+						AssemblyInstrucoes.AppendLine("li $v0, 4");
+						AssemblyInstrucoes.AppendLine($"la $a0, {NomeVar}");
+						AssemblyInstrucoes.AppendLine("syscall");
 
-                        #endregion
+						#endregion
 
-                        tokenAtual = scanner.ProximoToken();
-                    }
-                }
+						tokenAtual = scanner.ProximoToken();
+					}
+				}
 
-            }
-            else if (tokenAtual.Tipo == TipoToken.LEIA)
-            {
-                VerificarToken(TipoToken.LEIA);
-                tokenAtual = scanner.ProximoToken();
+			}
+			else if (tokenAtual.Tipo == TipoToken.LEIA)
+			{
+				VerificarToken(TipoToken.LEIA);
+				tokenAtual = scanner.ProximoToken();
 
-                VerificarToken(TipoToken.ABRE_PAREN);
-                tokenAtual = scanner.ProximoToken();
+				VerificarToken(TipoToken.ABRE_PAREN);
+				tokenAtual = scanner.ProximoToken();
 
-                VerificarToken(TipoToken.VARIAVEL);
-                nomeVariavel = tokenAtual.Nome;
+				VerificarToken(TipoToken.VARIAVEL);
+				nomeVariavel = tokenAtual.Nome;
 
-                string input = Console.ReadLine();
+				string input = Console.ReadLine();
 
-                if (!tabelaVariaveis.ContainsKey(tokenAtual.Nome))
-                {
-                    AssemblyVariaveis.AppendLine($"{tokenAtual.Nome}: .word 0");
-                }
+				if (!tabelaVariaveis.ContainsKey(tokenAtual.Nome))
+				{
+					AssemblyVariaveis.AppendLine($"{tokenAtual.Nome}: .word 0");
+				}
 
-                if (input.IsNumber())
-                {
-                    tokenAtual.Valor = Convert.ToDouble(input);
+				if (input.IsNumber())
+				{
+					tokenAtual.Valor = Convert.ToDouble(input);
 
-                    AdicionarValorTabela(nomeVariavel, tokenAtual.Valor);
-                }
-                else
-                {
-                    tokenAtual.ValorString = input;
-                    AdicionarValorTabela(nomeVariavel, tokenAtual.ValorString);
-                }
+					AdicionarValorTabela(nomeVariavel, tokenAtual.Valor);
+				}
+				else
+				{
+					tokenAtual.ValorString = input;
+					AdicionarValorTabela(nomeVariavel, tokenAtual.ValorString);
+				}
 
-                #region Ler Entrada
+				#region Ler Entrada
 
-                AssemblyInstrucoes.AppendLine("li $v0, 5");
-                AssemblyInstrucoes.AppendLine("syscall");
+				AssemblyInstrucoes.AppendLine("li $v0, 5");
+				AssemblyInstrucoes.AppendLine("syscall");
 
-                AssemblyInstrucoes.AppendLine($"sw $v0, {nomeVariavel}");
+				AssemblyInstrucoes.AppendLine($"sw $v0, {nomeVariavel}");
 
-                #endregion
+				#endregion
 
-                tokenAtual = scanner.ProximoToken();
+				tokenAtual = scanner.ProximoToken();
 
-                VerificarToken(TipoToken.FECHA_PAREN);
-                tokenAtual = scanner.ProximoToken();
+				VerificarToken(TipoToken.FECHA_PAREN);
+				tokenAtual = scanner.ProximoToken();
 
-            }
-            else if (tokenAtual.Tipo == TipoToken.SE)
-            {
-                bool executou = false;
+			}
+			else if (tokenAtual.Tipo == TipoToken.SE)
+			{
+				bool executou = false;
 
-                VerificarToken(TipoToken.SE);
-                tokenAtual = scanner.ProximoToken();
+				VerificarToken(TipoToken.SE);
+				tokenAtual = scanner.ProximoToken();
 
-                SintaxeCondicional();
+				SintaxeCondicional();
 
-                RestoIF();
+				RestoIF();
 
-                void RestoIF()
-                {
-                    if (tokenAtual.Tipo == TipoToken.SENAO_SE)
-                    {
-                        VerificarToken(TipoToken.SENAO_SE);
-                        tokenAtual = scanner.ProximoToken();
+				void RestoIF()
+				{
+					if (tokenAtual.Tipo == TipoToken.SENAO_SE)
+					{
+						VerificarToken(TipoToken.SENAO_SE);
+						tokenAtual = scanner.ProximoToken();
 
-                        SintaxeCondicional();
-                    }
+						SintaxeCondicional();
+					}
 
-                    RestoIF2();
-                }
+					RestoIF2();
+				}
 
-                void RestoIF2()
-                {
-                    if (tokenAtual.Tipo == TipoToken.SENAO && !executou)
-                    {
-                        VerificarToken(TipoToken.SENAO);
-                        tokenAtual = scanner.ProximoToken();
+				void RestoIF2()
+				{
+					if (tokenAtual.Tipo == TipoToken.SENAO && !executou)
+					{
+						VerificarToken(TipoToken.SENAO);
+						tokenAtual = scanner.ProximoToken();
 
-                        VerificarToken(TipoToken.ABRE_CHAVE);
-                        tokenAtual = scanner.ProximoToken();
+						VerificarToken(TipoToken.ABRE_CHAVE);
+						tokenAtual = scanner.ProximoToken();
 
-                        dentroBloco = true;
+						dentroBloco = true;
 
-                        ListaInstrucoes();
+						ListaInstrucoes();
 
-                        VerificarToken(TipoToken.FECHA_CHAVE);
-                        tokenAtual = scanner.ProximoToken();
+						VerificarToken(TipoToken.FECHA_CHAVE);
+						tokenAtual = scanner.ProximoToken();
 
-                        dentroBloco = false;
-                    }
-                }
+						dentroBloco = false;
+					}
+				}
 
 
 
-                void SintaxeCondicional()
-                {
-                    VerificarToken(TipoToken.ABRE_PAREN);
-                    tokenAtual = scanner.ProximoToken();
+				void SintaxeCondicional()
+				{
+					VerificarToken(TipoToken.ABRE_PAREN);
+					tokenAtual = scanner.ProximoToken();
 
-                    bool prosseguir = ExpressaoRelacional();
+					bool prosseguir = ExpressaoRelacional();
 
-                    VerificarToken(TipoToken.FECHA_PAREN);
-                    tokenAtual = scanner.ProximoToken();
+					VerificarToken(TipoToken.FECHA_PAREN);
+					tokenAtual = scanner.ProximoToken();
 
-                    if (prosseguir)
-                    {
-                        executou = true;
-                        chamadas++;
+					if (prosseguir)
+					{
+						executou = true;
+						chamadas++;
 
-                        VerificarToken(TipoToken.ABRE_CHAVE);
-                        tokenAtual = scanner.ProximoToken();
+						VerificarToken(TipoToken.ABRE_CHAVE);
+						tokenAtual = scanner.ProximoToken();
 
-                        dentroBloco = true;
+						dentroBloco = true;
 
-                        ListaInstrucoes();
+						ListaInstrucoes();
 
-                        VerificarToken(TipoToken.FECHA_CHAVE);
-                        tokenAtual = scanner.ProximoToken();
+						VerificarToken(TipoToken.FECHA_CHAVE);
+						tokenAtual = scanner.ProximoToken();
 
-                        chamadas--;
-                        if (chamadas == 0) dentroBloco = false;
-                    }
-                    else
-                    {
-                        //Pular os tokens das instruções que não serão executadas
-                        while (tokenAtual.Tipo != TipoToken.FECHA_CHAVE)
-                            tokenAtual = scanner.ProximoToken();
+						chamadas--;
+						if (chamadas == 0) dentroBloco = false;
+					}
+					else
+					{
+						//Pular os tokens das instruções que não serão executadas
+						while (tokenAtual.Tipo != TipoToken.FECHA_CHAVE)
+							tokenAtual = scanner.ProximoToken();
 
-                        tokenAtual = scanner.ProximoToken();
-                    }
+						tokenAtual = scanner.ProximoToken();
+					}
 
-                }
-            }
-            else if (tokenAtual.Tipo == TipoToken.ENQUANTO)
-            {
-                VerificarToken(TipoToken.ENQUANTO);
-                tokenAtual = scanner.ProximoToken();
+				}
+			}
+			else if (tokenAtual.Tipo == TipoToken.ENQUANTO)
+			{
+				VerificarToken(TipoToken.ENQUANTO);
+				tokenAtual = scanner.ProximoToken();
 
-                VerificarToken(TipoToken.ABRE_PAREN);
-                tokenAtual = scanner.ProximoToken();
+				VerificarToken(TipoToken.ABRE_PAREN);
+				tokenAtual = scanner.ProximoToken();
 
-                bool prosseguir = ExpressaoRelacional(true);
+				bool prosseguir = ExpressaoRelacional(true);
 
-                VerificarToken(TipoToken.FECHA_PAREN);
-                tokenAtual = scanner.ProximoToken();
+				VerificarToken(TipoToken.FECHA_PAREN);
+				tokenAtual = scanner.ProximoToken();
 
-                if (prosseguir)
-                {
-                    VerificarToken(TipoToken.ABRE_CHAVE);
-                    tokenAtual = scanner.ProximoToken();
+				if (prosseguir)
+				{
+					VerificarToken(TipoToken.ABRE_CHAVE);
+					tokenAtual = scanner.ProximoToken();
 
-                    dentroBloco = true;
+					dentroBloco = true;
 
-                    ListaInstrucoes();
+					ListaInstrucoes();
 
-                    AssemblyInstrucoes.AppendLine("j inicioLoop");
-                    AssemblyInstrucoes.AppendLine();
+					AssemblyInstrucoes.AppendLine($"j inicioLoop{chamadas}");
+					AssemblyInstrucoes.AppendLine();
 
-                    VerificarToken(TipoToken.FECHA_CHAVE);
-                    tokenAtual = scanner.ProximoToken();
+					VerificarToken(TipoToken.FECHA_CHAVE);
+					tokenAtual = scanner.ProximoToken();
 
-                    dentroBloco = false;
+					dentroBloco = false;
 
-                    AssemblyInstrucoes.AppendLine("fimLoop:");
-                    AssemblyInstrucoes.AppendLine("li $v0, 10");
-                    AssemblyInstrucoes.AppendLine("syscall");
-                }
+					AssemblyInstrucoes.AppendLine("fimLoop:");
+					AssemblyInstrucoes.AppendLine("li $v0, 10");
+					AssemblyInstrucoes.AppendLine("syscall");
+				}
 
 
-            }
+			}
 
-            bool ExpressaoRelacional(bool loop = false)
-            {
-                Expressao();
+			bool ExpressaoRelacional(bool loop = false)
+			{
+				Expressao();
 
-                dynamic operando1 = pilhaExpressoes.Pop();
+				dynamic operando1 = pilhaExpressoes.Pop();
 
-                TipoToken tipoToken = OperacaoRelacional();
+				TipoToken tipoToken = OperacaoRelacional();
 
-                Expressao();
+				Expressao();
 
-                dynamic operando2 = pilhaExpressoes.Pop();
+				dynamic operando2 = pilhaExpressoes.Pop();
 
-                switch (tipoToken)
-                {
-                    case TipoToken.MENOR:
-                        if (operando1 < operando2)
-                        {
-                            AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
-                            AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+				switch (tipoToken)
+				{
+					case TipoToken.MENOR:
 
-                            AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
-                            AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+						DesempilharOperadores();
 
-                            if (loop)
-                            {
-                                AssemblyInstrucoes.AppendLine();
-                                AssemblyInstrucoes.AppendLine("inicioLoop:");
-                                AssemblyInstrucoes.AppendLine("bgt $t1, $t0, fimLoop");
-                            }
-                            else
-                            {
-                                AssemblyInstrucoes.Append("blt $t1, $t0, menor").Append(chamadas).AppendLine();
-                            }
+						if (loop)
+						{
+							AssemblyInstrucoes.AppendLine();
+							AssemblyInstrucoes.AppendLine($"inicioLoop:{chamadas}");
+							AssemblyInstrucoes.AppendLine("bgt $t1, $t0, fimLoop");
+						}
+						else
+						{
+							AssemblyInstrucoes.Append("blt $t1, $t0, menor").Append(chamadas).AppendLine();
+						}
 
-                            AssemblyInstrucoes.AppendLine();
+						AssemblyInstrucoes.AppendLine();
 
-                            if (!loop)
-                                AssemblyInstrucoes.Append("menor").Append(chamadas).AppendLine(":");
+						if (!loop)
+							AssemblyInstrucoes.Append("menor").Append(chamadas).AppendLine(":");
 
-                            return true;
-                        }
-                        break;
-                    case TipoToken.MENOR_IGUAL:
+						if (operando1 < operando2) return true;
 
-                        AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
-                        AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+						break;
+					case TipoToken.MENOR_IGUAL:
 
-                        AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
-                        AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+						DesempilharOperadores();
 
-                        AssemblyInstrucoes.AppendLine("ble $t1, $t0, menorIgual");
+						if (loop)
+						{
+							AssemblyInstrucoes.AppendLine();
+							AssemblyInstrucoes.AppendLine($"inicioLoop:{chamadas}");
+							AssemblyInstrucoes.AppendLine("bge $t1, $t0, fimLoop");
+						}
+						else
+						{
+							AssemblyInstrucoes.AppendLine("ble $t1, $t0, menorIgual");
+						}
 
-                        AssemblyInstrucoes.AppendLine();
-                        AssemblyInstrucoes.AppendLine("menorIgual:");
+						AssemblyInstrucoes.AppendLine();
 
-                        if (operando1 <= operando2) return true;
+						if (!loop)
+							AssemblyInstrucoes.AppendLine("menorIgual:");
 
-                        break;
-                    case TipoToken.MAIOR:
+						if (operando1 <= operando2) return true;
 
-                        AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
-                        AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+						break;
+					case TipoToken.MAIOR:
 
-                        AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
-                        AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+						DesempilharOperadores();
 
-                        AssemblyInstrucoes.AppendLine("bgt $t1, $t0, maior");
+						if (loop)
+						{
+							AssemblyInstrucoes.AppendLine();
+							AssemblyInstrucoes.AppendLine($"inicioLoop:{chamadas}");
+							AssemblyInstrucoes.AppendLine("blt $t1, $t0, fimLoop");
+						}
+						else
+						{
+							AssemblyInstrucoes.AppendLine("bgt $t1, $t0, maior");
+						}
 
-                        AssemblyInstrucoes.AppendLine();
-                        AssemblyInstrucoes.AppendLine("maior:");
+						AssemblyInstrucoes.AppendLine();
 
-                        if (operando1 > operando2) return true;
+						if (!loop)
+							AssemblyInstrucoes.AppendLine("maior:");
 
-                        break;
-                    case TipoToken.MAIOR_IGUAL:
+						if (operando1 > operando2) return true;
 
-                        AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
-                        AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+						break;
+					case TipoToken.MAIOR_IGUAL:
 
-                        AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
-                        AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+						DesempilharOperadores();
 
-                        AssemblyInstrucoes.AppendLine("bge $t1, $t0, maiorIgual");
+						if (loop)
+						{
+							AssemblyInstrucoes.AppendLine();
+							AssemblyInstrucoes.AppendLine($"inicioLoop:{chamadas}");
+							AssemblyInstrucoes.AppendLine("blt $t1, $t0, fimLoop");
+						}
+						else
+						{
+							AssemblyInstrucoes.AppendLine("bge $t1, $t0, maiorIgual");
+						}
 
-                        AssemblyInstrucoes.AppendLine();
-                        AssemblyInstrucoes.AppendLine("maiorIgual:");
+						AssemblyInstrucoes.AppendLine();
 
-                        if (operando1 >= operando2) return true;
+						if (!loop)
+							AssemblyInstrucoes.AppendLine("maiorIgual:");
 
-                        break;
-                    case TipoToken.IGUAL:
+						if (operando1 >= operando2) return true;
 
-                        AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
-                        AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+						break;
+					case TipoToken.IGUAL:
 
-                        AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
-                        AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+						DesempilharOperadores();
 
-                        AssemblyInstrucoes.AppendLine("beq $t1, $t0, igual");
+						if (loop)
+						{
+							AssemblyInstrucoes.AppendLine();
+							AssemblyInstrucoes.AppendLine($"inicioLoop:{chamadas}");
+							AssemblyInstrucoes.AppendLine("bne $t1, $t0, fimLoop";
+						}
+						else
+						{
+							AssemblyInstrucoes.AppendLine("beq $t1, $t0, igual");
+						}
 
-                        AssemblyInstrucoes.AppendLine();
-                        AssemblyInstrucoes.AppendLine("igual:");
 
-                        if (operando1 == operando2) return true;
+						AssemblyInstrucoes.AppendLine();
 
-                        break;
-                    case TipoToken.DIFERENTE:
+						if (!loop)
+							AssemblyInstrucoes.AppendLine("igual:");
 
-                        AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
-                        AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+						if (operando1 == operando2) return true;
 
-                        AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
-                        AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+						break;
+					case TipoToken.DIFERENTE:
 
-                        AssemblyInstrucoes.AppendLine("bne $t1, $t0, diferente");
+						DesempilharOperadores();
 
-                        AssemblyInstrucoes.AppendLine();
-                        AssemblyInstrucoes.AppendLine("diferente:");
+						if (loop)
+						{
+							AssemblyInstrucoes.AppendLine();
+							AssemblyInstrucoes.AppendLine($"inicioLoop:{chamadas}");
+							AssemblyInstrucoes.AppendLine("beq $t1, $t0, fimLoop";
+						}
+						else
+						{
+							AssemblyInstrucoes.AppendLine("bne $t1, $t0, diferente");
+						}
 
-                        if (operando1 != operando2) return true;
+						AssemblyInstrucoes.AppendLine();
 
-                        break;
-                        //case TipoToken.BOOLEAN:
-                        //    if (tokenAtual.ValorBool)
-                        //    {
-                        //        AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
-                        //        AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+						if (!loop)
+							AssemblyInstrucoes.AppendLine("diferente:");
 
-                        //        AssemblyInstrucoes.AppendLine("li $t0, 1");
-                        //        //AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+						if (operando1 != operando2) return true;
 
-                        //        AssemblyInstrucoes.AppendLine("beq $t1, $t0, verdadeiro");
+						break;
+				}
 
-                        //        AssemblyInstrucoes.AppendLine();
-                        //        AssemblyInstrucoes.AppendLine("verdadeiro:");
+				return false;
 
-                        //        return true;
-                        //    }
-                        //    else
-                        //    {
-                        //        AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
-                        //        AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+				void DesempilharOperadores()
+				{
 
-                        //        AssemblyInstrucoes.AppendLine("li $t0, 0");
-                        //        //AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+					AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
+					AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
 
-                        //        AssemblyInstrucoes.AppendLine("beq $t1, $t0, falso");
+					AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
+					AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
 
-                        //        return false;
-                        //        //AssemblyInstrucoes.AppendLine();
-                        //        //AssemblyInstrucoes.AppendLine("falso:");
-                        //    }
-                        //    tokenAtual = scanner.ProximoToken();
-                        //break;
-                }
+				}
+			}
 
-                return false;
-            }
+			TipoToken OperacaoRelacional()
+			{
+				if (tokenAtual.Tipo == TipoToken.MENOR)
+				{
+					tokenAtual = scanner.ProximoToken();
+					return TipoToken.MENOR;
+				}
+				else if (tokenAtual.Tipo == TipoToken.MENOR_IGUAL)
+				{
+					tokenAtual = scanner.ProximoToken();
+					return TipoToken.MENOR_IGUAL;
+				}
+				else if (tokenAtual.Tipo == TipoToken.MAIOR)
+				{
+					tokenAtual = scanner.ProximoToken();
+					return TipoToken.MAIOR;
+				}
+				else if (tokenAtual.Tipo == TipoToken.MAIOR_IGUAL)
+				{
+					tokenAtual = scanner.ProximoToken();
+					return TipoToken.MAIOR_IGUAL;
+				}
+				else if (tokenAtual.Tipo == TipoToken.IGUAL)
+				{
+					tokenAtual = scanner.ProximoToken();
+					return TipoToken.IGUAL;
+				}
+				else if (tokenAtual.Tipo == TipoToken.DIFERENTE)
+				{
+					tokenAtual = scanner.ProximoToken();
+					return TipoToken.DIFERENTE;
+				}
 
-            TipoToken OperacaoRelacional()
-            {
-                if (tokenAtual.Tipo == TipoToken.MENOR)
-                {
-                    tokenAtual = scanner.ProximoToken();
-                    return TipoToken.MENOR;
-                }
-                else if (tokenAtual.Tipo == TipoToken.MENOR_IGUAL)
-                {
-                    tokenAtual = scanner.ProximoToken();
-                    return TipoToken.MENOR_IGUAL;
-                }
-                else if (tokenAtual.Tipo == TipoToken.MAIOR)
-                {
-                    tokenAtual = scanner.ProximoToken();
-                    return TipoToken.MAIOR;
-                }
-                else if (tokenAtual.Tipo == TipoToken.MAIOR_IGUAL)
-                {
-                    tokenAtual = scanner.ProximoToken();
-                    return TipoToken.MAIOR_IGUAL;
-                }
-                else if (tokenAtual.Tipo == TipoToken.IGUAL)
-                {
-                    tokenAtual = scanner.ProximoToken();
-                    return TipoToken.IGUAL;
-                }
-                else if (tokenAtual.Tipo == TipoToken.DIFERENTE)
-                {
-                    tokenAtual = scanner.ProximoToken();
-                    return TipoToken.DIFERENTE;
-                }
-                //else if (tokenAtual.Tipo == TipoToken.BOOLEAN)
-                //{
-                //    //tokenAtual = scanner.ProximoToken();
-                //    return TipoToken.BOOLEAN;
-                //}
-                //else if (tokenAtual.Tipo == TipoToken.FALSE)
-                //{
-                //    tokenAtual = scanner.ProximoToken();
-                //    return TipoToken.FALSE;
-                //}
+				return TipoToken.ERRO;
+			}
+		}
 
-                return TipoToken.ERRO;
-            }
-        }
+		private void Expressao()
+		{
+			Termo();
+			RestanteExpressao();
+		}
 
-        private void Expressao()
-        {
-            Termo();
-            RestanteExpressao();
-        }
+		private void RestanteExpressao()
+		{
+			if (tokenAtual.Tipo == TipoToken.SOMA)
+			{
+				VerificarToken(TipoToken.SOMA);
+				tokenAtual = scanner.ProximoToken();
+				Termo();
 
-        private void RestanteExpressao()
-        {
-            if (tokenAtual.Tipo == TipoToken.SOMA)
-            {
-                VerificarToken(TipoToken.SOMA);
-                tokenAtual = scanner.ProximoToken();
-                Termo();
+				//Cálculo   
+				operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
+				operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
 
-                //Cálculo   
-                operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
-                operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
+				resultado = operando1 + operando2;
+				pilhaExpressoes.Push(resultado);
 
-                resultado = operando1 + operando2;
-                pilhaExpressoes.Push(resultado);
+				#region Soma e Empilhamento
+				AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
+				AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
 
-                #region Soma e Empilhamento
-                AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
-                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+				AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
+				AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
 
-                AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
-                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+				AssemblyInstrucoes.AppendLine("add $t2, $t0, $t1");
 
-                AssemblyInstrucoes.AppendLine("add $t2, $t0, $t1");
+				AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
+				AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
+				AssemblyInstrucoes.AppendLine();
 
-                AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
-                AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
-                AssemblyInstrucoes.AppendLine();
+				#endregion
 
-                #endregion
+				RestanteExpressao();
+			}
+			else if (tokenAtual.Tipo == TipoToken.SUB)
+			{
+				VerificarToken(TipoToken.SUB);
+				tokenAtual = scanner.ProximoToken();
+				Termo();
 
-                RestanteExpressao();
-            }
-            else if (tokenAtual.Tipo == TipoToken.SUB)
-            {
-                VerificarToken(TipoToken.SUB);
-                tokenAtual = scanner.ProximoToken();
-                Termo();
+				//Cálculo
+				operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
+				operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
 
-                //Cálculo
-                operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
-                operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
+				resultado = operando1 - operando2;
+				pilhaExpressoes.Push(resultado);
 
-                resultado = operando1 - operando2;
-                pilhaExpressoes.Push(resultado);
+				#region Subtração e Empilhamento
 
-                #region Subtração e Empilhamento
+				AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
+				AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
 
-                AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
-                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+				AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
+				AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
 
-                AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
-                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+				AssemblyInstrucoes.AppendLine("sub $t2, $t0, $t1");
 
-                AssemblyInstrucoes.AppendLine("sub $t2, $t0, $t1");
+				AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
+				AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
+				AssemblyInstrucoes.AppendLine();
 
-                AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
-                AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
-                AssemblyInstrucoes.AppendLine();
+				#endregion
 
-                #endregion
+				RestanteExpressao();
+			}
+			else;
 
-                RestanteExpressao();
-            }
-            else;
+		}
+		private void Termo()
+		{
+			Fator();
+			RestoTermo();
+		}
 
-        }
-        private void Termo()
-        {
-            Fator();
-            RestoTermo();
-        }
+		private void Fator()
+		{
+			if (tokenAtual.Tipo == TipoToken.VARIAVEL)
+			{
+				VerificarToken(TipoToken.VARIAVEL);
+				pilhaExpressoes.Push(tabelaVariaveis.FirstOrDefault(variavel => variavel.Key == tokenAtual.Nome).Value);
+				string nomeVar = tokenAtual.Nome;
 
-        private void Fator()
-        {
-            if (tokenAtual.Tipo == TipoToken.VARIAVEL)
-            {
-                VerificarToken(TipoToken.VARIAVEL);
-                pilhaExpressoes.Push(tabelaVariaveis.FirstOrDefault(variavel => variavel.Key == tokenAtual.Nome).Value);
-                string nomeVar = tokenAtual.Nome;
+				tokenAtual = scanner.ProximoToken();
 
-                tokenAtual = scanner.ProximoToken();
+				AssemblyInstrucoes.AppendLine($"lw $t5, {nomeVar}");
+				AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
+				AssemblyInstrucoes.AppendLine("sw $t5, ($sp)");
+				AssemblyInstrucoes.AppendLine();
 
-                AssemblyInstrucoes.AppendLine($"lw $t5, {nomeVar}");
-                AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
-                AssemblyInstrucoes.AppendLine("sw $t5, ($sp)");
-                AssemblyInstrucoes.AppendLine();
+				Potencia();
+			}
+			else if (tokenAtual.Tipo == TipoToken.NUMERO)
+			{
+				VerificarToken(TipoToken.NUMERO);
+				pilhaExpressoes.Push(tokenAtual.Valor);
+				double valor = tokenAtual.Valor;
 
-                Potencia();
-            }
-            else if (tokenAtual.Tipo == TipoToken.NUMERO)
-            {
-                VerificarToken(TipoToken.NUMERO);
-                pilhaExpressoes.Push(tokenAtual.Valor);
-                double valor = tokenAtual.Valor;
+				tokenAtual = scanner.ProximoToken();
 
-                tokenAtual = scanner.ProximoToken();
+				AssemblyInstrucoes.AppendLine($"li $t5, {valor.ToString()}");
+				AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
+				AssemblyInstrucoes.AppendLine("sw $t5, ($sp)");
+				AssemblyInstrucoes.AppendLine();
 
-                AssemblyInstrucoes.AppendLine($"li $t5, {valor.ToString()}");
-                AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
-                AssemblyInstrucoes.AppendLine("sw $t5, ($sp)");
-                AssemblyInstrucoes.AppendLine();
+				Potencia();
+			}
+			else
+			{
+				VerificarToken(TipoToken.ABRE_PAREN);
+				tokenAtual = scanner.ProximoToken();
 
-                Potencia();
-            }
-            else if (tokenAtual.Tipo == TipoToken.BOOLEAN)
-            {
-                VerificarToken(TipoToken.BOOLEAN);
-                pilhaExpressoes.Push(tokenAtual.ValorBool);
-                bool valor = tokenAtual.ValorBool;
+				Expressao();
 
-                tokenAtual = scanner.ProximoToken();
+				VerificarToken(TipoToken.FECHA_PAREN);
+				tokenAtual = scanner.ProximoToken();
 
-                AssemblyInstrucoes.AppendLine($"li $t5, {(valor ? "1" : "0")}");
-                AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
-                AssemblyInstrucoes.AppendLine("sw $t5, ($sp)");
-                AssemblyInstrucoes.AppendLine();
+				Potencia();
+			}
+		}
 
-            }
-            else
-            {
-                VerificarToken(TipoToken.ABRE_PAREN);
-                tokenAtual = scanner.ProximoToken();
+		private void RestoTermo()
+		{
+			if (tokenAtual.Tipo == TipoToken.MULT)
+			{
+				VerificarToken(TipoToken.MULT);
+				tokenAtual = scanner.ProximoToken();
+				Fator();
 
-                Expressao();
+				operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
+				operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
+				resultado = operando1 * operando2;
 
-                VerificarToken(TipoToken.FECHA_PAREN);
-                tokenAtual = scanner.ProximoToken();
+				pilhaExpressoes.Push(resultado);
 
-                Potencia();
-            }
-        }
+				#region Multiplicação e Empilhamento
 
-        private void RestoTermo()
-        {
-            if (tokenAtual.Tipo == TipoToken.MULT)
-            {
-                VerificarToken(TipoToken.MULT);
-                tokenAtual = scanner.ProximoToken();
-                Fator();
+				AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
+				AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
 
-                operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
-                operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
-                resultado = operando1 * operando2;
+				AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
+				AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
 
-                pilhaExpressoes.Push(resultado);
+				AssemblyInstrucoes.AppendLine("mul $t2, $t0, $t1");
 
-                #region Multiplicação e Empilhamento
+				AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
+				AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
 
-                AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
-                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+				#endregion
 
-                AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
-                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+				RestoTermo();
+			}
+			else if (tokenAtual.Tipo == TipoToken.DIV)
+			{
+				VerificarToken(TipoToken.DIV);
+				tokenAtual = scanner.ProximoToken();
+				Fator();
 
-                AssemblyInstrucoes.AppendLine("mul $t2, $t0, $t1");
+				operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
 
-                AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
-                AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
+				if (operando2 == 0)
+				{
+					Console.WriteLine("Divisão por 0 inválida.");
+					tokenAtual = new Token(TipoToken.ERRO);
+					ListaInstrucoes();
+				}
 
-                #endregion
+				operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
+				resultado = operando1 / operando2;
 
-                RestoTermo();
-            }
-            else if (tokenAtual.Tipo == TipoToken.DIV)
-            {
-                VerificarToken(TipoToken.DIV);
-                tokenAtual = scanner.ProximoToken();
-                Fator();
+				pilhaExpressoes.Push(resultado);
 
-                operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
+				#region Divisão e Empilhamento
 
-                if (operando2 == 0)
-                {
-                    Console.WriteLine("Divisão por 0 inválida.");
-                    tokenAtual = new Token(TipoToken.ERRO);
-                    ListaInstrucoes();
-                }
+				AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
+				AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
 
-                operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
-                resultado = operando1 / operando2;
+				AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
+				AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
 
-                pilhaExpressoes.Push(resultado);
+				AssemblyInstrucoes.AppendLine("div $t2, $t0, $t1");
 
-                #region Divisão e Empilhamento
+				AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
+				AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
 
-                AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
-                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+				#endregion
 
-                AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
-                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+				RestoTermo();
+			}
+			else if (tokenAtual.Tipo == TipoToken.RESTO)
+			{
+				VerificarToken(TipoToken.RESTO);
+				tokenAtual = scanner.ProximoToken();
+				Fator();
 
-                AssemblyInstrucoes.AppendLine("div $t2, $t0, $t1");
+				operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
 
-                AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
-                AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
+				if (operando2 == 0)
+				{
+					Console.WriteLine("Divisão por 0 inválida.");
+					tokenAtual = new Token(TipoToken.ERRO);
+					ListaInstrucoes();
+				}
 
-                #endregion
+				operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
+				resultado = operando1 % operando2;
 
-                RestoTermo();
-            }
-            else if (tokenAtual.Tipo == TipoToken.RESTO)
-            {
-                VerificarToken(TipoToken.RESTO);
-                tokenAtual = scanner.ProximoToken();
-                Fator();
+				pilhaExpressoes.Push(resultado);
 
-                operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
+				#region Resto e Empilhamento
 
-                if (operando2 == 0)
-                {
-                    Console.WriteLine("Divisão por 0 inválida.");
-                    tokenAtual = new Token(TipoToken.ERRO);
-                    ListaInstrucoes();
-                }
+				AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
+				AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
 
-                operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
-                resultado = operando1 % operando2;
+				AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
+				AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
 
-                pilhaExpressoes.Push(resultado);
+				AssemblyInstrucoes.AppendLine("rem $t2, $t0, $t1");
 
-                #region Resto e Empilhamento
+				AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
+				AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
 
-                AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
-                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+				#endregion
 
-                AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
-                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+				RestoTermo();
+			}
+			else;
+		}
 
-                AssemblyInstrucoes.AppendLine("rem $t2, $t0, $t1");
+		private void Potencia()
+		{
+			if (tokenAtual.Tipo == TipoToken.EXP)
+			{
+				VerificarToken(TipoToken.EXP);
+				tokenAtual = scanner.ProximoToken();
 
-                AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
-                AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
+				Expressao();
 
-                #endregion
+				operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
+				operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
+				resultado = Math.Pow(operando1, operando2);
 
-                RestoTermo();
-            }
-            else;
-        }
+				#region Potencia 
 
-        private void Potencia()
-        {
-            if (tokenAtual.Tipo == TipoToken.EXP)
-            {
-                VerificarToken(TipoToken.EXP);
-                tokenAtual = scanner.ProximoToken();
+				AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
+				AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
 
-                Expressao();
+				AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
+				AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
 
-                operando2 = Convert.ToDouble(pilhaExpressoes.Pop());
-                operando1 = Convert.ToDouble(pilhaExpressoes.Pop());
-                resultado = Math.Pow(operando1, operando2);
+				AssemblyInstrucoes.AppendLine("li $t2, 1");
+				AssemblyInstrucoes.AppendLine("li $t5, 1");
 
-                #region Potencia 
+				AssemblyInstrucoes.AppendLine("for:");
+				AssemblyInstrucoes.AppendLine("beq $t1, $zero, fim");
+				AssemblyInstrucoes.AppendLine("mul $t2, $t2, $t0");
+				AssemblyInstrucoes.AppendLine("sub $t1, $t1, $t5");
 
-                AssemblyInstrucoes.AppendLine("lw $t1, ($sp)");
-                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+				AssemblyInstrucoes.AppendLine("j for");
 
-                AssemblyInstrucoes.AppendLine("lw $t0, ($sp)");
-                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+				AssemblyInstrucoes.AppendLine("fim:");
+				AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
+				AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
 
-                AssemblyInstrucoes.AppendLine("li $t2, 1");
-                AssemblyInstrucoes.AppendLine("li $t5, 1");
+				#endregion
 
-                AssemblyInstrucoes.AppendLine("for:");
-                AssemblyInstrucoes.AppendLine("beq $t1, $zero, fim");
-                AssemblyInstrucoes.AppendLine("mul $t2, $t2, $t0");
-                AssemblyInstrucoes.AppendLine("sub $t1, $t1, $t5");
+				pilhaExpressoes.Push(resultado);
+			}
 
-                AssemblyInstrucoes.AppendLine("j for");
+		}
 
-                AssemblyInstrucoes.AppendLine("fim:");
-                AssemblyInstrucoes.AppendLine("subu $sp, $sp, 4");
-                AssemblyInstrucoes.AppendLine("sw $t2, ($sp)");
 
-                #endregion
+		private void VerificarToken(TipoToken tipo)
+		{
+			if (tokenAtual.Tipo == tipo)
+			{
+				Status = true;
+			}
+			else
+			{
+				Status = false;
+				Console.WriteLine($"Token {tipo} esperado. Erro na posição {scanner.Posicao}");
+				tokenAtual = new Token(TipoToken.ERRO);
+			}
 
-                pilhaExpressoes.Push(resultado);
-            }
+		}
 
-        }
+		private void AdicionarValorTabela(string nomeVariavel, dynamic valor)
+		{
+			if (tabelaVariaveis.ContainsKey(nomeVariavel))
+			{
+				tabelaVariaveis[nomeVariavel] = valor;
+			}
+			else
+			{
+				tabelaVariaveis.Add(nomeVariavel, valor);
 
+				#region Declaração de Variáveis
 
-        private void VerificarToken(TipoToken tipo)
-        {
-            if (tokenAtual.Tipo == tipo)
-            {
-                Status = true;
-            }
-            else
-            {
-                Status = false;
-                Console.WriteLine($"Token {tipo} esperado. Erro na posição {scanner.Posicao}");
-                tokenAtual = new Token(TipoToken.ERRO);
-            }
+				AssemblyVariaveis.Append(nomeVariavel);
+				AssemblyVariaveis.AppendLine(": .word 0");
 
-        }
+				#endregion
 
-        private void AdicionarValorTabela(string nomeVariavel, dynamic valor)
-        {
-            if (tabelaVariaveis.ContainsKey(nomeVariavel))
-            {
-                tabelaVariaveis[nomeVariavel] = valor;
-            }
-            else
-            {
-                tabelaVariaveis.Add(nomeVariavel, valor);
+				#region Desempilhamento e Atribuição
 
-                #region Declaração de Variáveis
+				AssemblyInstrucoes.AppendLine("lw $t4, ($sp)");
+				AssemblyInstrucoes.AppendLine($"sw $t4, {nomeVariavel}");
+				AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
+				AssemblyInstrucoes.AppendLine();
 
-                AssemblyVariaveis.Append(nomeVariavel);
-                AssemblyVariaveis.AppendLine(": .word 0");
+				#endregion
 
-                #endregion
-
-                #region Desempilhamento e Atribuição
-
-                AssemblyInstrucoes.AppendLine("lw $t4, ($sp)");
-                AssemblyInstrucoes.AppendLine($"sw $t4, {nomeVariavel}");
-                AssemblyInstrucoes.AppendLine("addu $sp, $sp, 4");
-                AssemblyInstrucoes.AppendLine();
-
-                #endregion
-
-            }
-        }
-    }
+			}
+		}
+	}
 }
